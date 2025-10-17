@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "69778184117",
+    "project_id": "proyecto-e519b",
+    "storage_bucket": "proyecto-e519b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:69778184117:android:e2d937e7cec8b067746bfc",
+        "android_client_info": {
+          "package_name": "com.example.skull_maze"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "69778184117-gguo82sde2jbnnfcndqsdavsq5pof83k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEq6mEtKdaVq_FUYPD8pL-VGImxmCZIL8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "69778184117-gguo82sde2jbnnfcndqsdavsq5pof83k.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "69778184117-t38a93a2b1b9br91jc65qic9fttor3qc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.skullMaze"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

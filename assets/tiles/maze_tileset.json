@@ -1,0 +1,37 @@
+```json
+{
+  "image": "tiles/maze_tileset.png",
+  "tile_width": 32,
+  "tile_height": 32,
+  "tiles": [
+    {
+      "id": 1,
+      "type": "wall",
+      "x": 0,
+      "y": 0,
+      "collidable": true
+    },
+    {
+      "id": 2,
+      "type": "path",
+      "x": 32,
+      "y": 0,
+      "collidable": false
+    },
+    {
+      "id": 3,
+      "type": "start",
+      "x": 64,
+      "y": 0,
+      "collidable": false
+    },
+    {
+      "id": 4,
+      "type": "end",
+      "x": 96,
+      "y": 0,
+      "collidable": false
+    }
+  ]
+}
+```
