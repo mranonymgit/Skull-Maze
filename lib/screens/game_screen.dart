@@ -14,8 +14,7 @@ import '../main.dart'; // Import main.dart for audioPlayerProvider
 
 // ================= Pared =================
 class Wall extends PositionComponent with CollisionCallbacks {
-  Wall({required super.position, required super.size, super.anchor = Anchor
-      .topLeft});
+  Wall({required super.position, required super.size, super.anchor = Anchor.topLeft});
 
   @override
   Future<void> onLoad() async {
@@ -25,8 +24,7 @@ class Wall extends PositionComponent with CollisionCallbacks {
 
   @override
   void render(Canvas canvas) {
-    canvas.drawRect(size.toRect(), Paint()
-      ..color = const Color(0xFF7E57C2));
+    canvas.drawRect(size.toRect(), Paint()..color = const Color(0xFF7E57C2));
   }
 }
 
@@ -43,62 +41,64 @@ class Goal extends PositionComponent with CollisionCallbacks {
 
   @override
   void render(Canvas canvas) {
-    canvas.drawCircle(Offset.zero, size.x / 2, Paint()
-      ..color = const Color(0xFF3D5AFE));
+    canvas.drawCircle(Offset.zero, size.x / 2, Paint()..color = const Color(0xFF3D5AFE));
   }
 }
 
 // ================= Jugador =================
+// Define la clase para el personaje del jugador.
 class Player extends PositionComponent
     with HasGameRef<SkullMazeGame>, CollisionCallbacks {
+  // Constructor que recibe la posición inicial del jugador. El ancla por defecto es el centro.
   Player({required super.position, super.anchor = Anchor.center});
 
-  Vector2 _previousPosition = Vector2.zero();
-  final double playerSpeed = 250;
-  bool _goalReached = false;
+  Vector2 _previousPosition = Vector2.zero(); // Almacena la posición anterior del jugador para revertir movimientos no válidos.
+  final double playerSpeed = 250; // Define la velocidad de movimiento del jugador.
+  bool _goalReached = false; // Bandera para saber si el jugador ha alcanzado la meta.
 
   @override
   Future<void> onLoad() async {
-    super.onLoad();
-    size = Vector2.all(20);
-    add(CircleHitbox()
-      ..radius = size.x / 2);
-    _previousPosition = position.clone();
+    super.onLoad(); // Llama al metodo onLoad de la clase padre.
+    size = Vector2.all(20); // Establece el tamaño del jugador a 20x20 píxeles.
+    add(CircleHitbox()..radius = size.x / 2); // Añade un 'hitbox' circular para colisiones precisas.
+    _previousPosition = position.clone(); // Guarda la posición inicial como la "anterior".
   }
 
+  // Intenta mover al jugador.
   void tryMove(Vector2 delta, double dt) {
-    _previousPosition = position.clone();
-    position.add(delta * dt * playerSpeed);
+    _previousPosition = position.clone(); // Guarda la posición actual antes de moverse.
+    position.add(delta * dt * playerSpeed); // Actualiza la posición basándose en la dirección (delta), el tiempo (dt) y la velocidad.
+    // Limita la posición del jugador para que no se salga de los límites del lienzo del juego.
+    // position.x = position.x.clamp(size.x / 2, gameRef.canvasSize.x - size.x / 2);
+    // position.y = position.y.clamp(size.y / 2, gameRef.canvasSize.y - size.y / 2);
   }
 
   @override
-  void onCollisionStart(Set<Vector2> intersectionPoints,
-      PositionComponent other) {
-    super.onCollisionStart(intersectionPoints, other);
+  // Se llama cuando el jugador colisiona con otro componente.
+  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollisionStart(intersectionPoints, other); // Llama al metodo de la clase padre.
     if (other is Goal) {
-      if (!_goalReached) {
-        print('¡Meta alcanzada en el nivel ${gameRef.level}!');
-        _goalReached = true;
-        gameRef.nextLevel();
-      }
+      // Si la colisión es con la meta...
+      print('¡Meta alcanzada en el nivel ${gameRef.level}!'); // Imprime un mensaje en la consola.
+      _goalReached = true; // Marca que la meta ha sido alcanzada.
+      gameRef.nextLevel(); // Llama al metodo para pasar al siguiente nivel.
     }
     if (other is Wall) {
-      position = _previousPosition;
+      // Si la colisión es con un muro...
+      position = _previousPosition; // ...revierte la posición del jugador a la que tenía antes de moverse.
+      final Vector2 movementDelta = position - _previousPosition; // Calcula la diferencia de posición entre la posición actual y la anterior.
+      if (movementDelta.x.abs() > movementDelta.y.abs()){
+        position.x = _previousPosition.x;
+      } else {
+        position.y = _previousPosition.y;
+      }
     }
   }
-
-  @override
-  void onCollisionEnd(PositionComponent other) {
-    if (other is Goal) {
-      _goalReached = false;
-    }
-    super.onCollisionEnd(other);
-  }
-
   @override
   void render(Canvas canvas) {
+    // Dibuja al jugador en el lienzo del juego.
     canvas.drawCircle(Offset.zero, size.x / 2, Paint()
-      ..color = const Color(0xFF18FFFF));
+      ..color = const Color(0xFF18FFFF)); // Dibuja un círculo de color cian.
   }
 }
 
@@ -113,10 +113,10 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
   Vector2 _gyroDelta = Vector2.zero();
   late int effectiveGridSize;
   late double cellSize;
-  bool isPaused = false;
-  bool isVolumeOn = true;
-  bool isVibrationOn = true;
-  double volumeLevel = 1.0;
+  bool isPaused = false; // Estado de pausa
+  bool isVolumeOn = true; // Estado del volumen
+  bool isVibrationOn = true; // Estado de vibración
+  double volumeLevel = 1.0; // Nivel de volumen (0.0 a 1.0)
 
   @override
   Future<void> onLoad() async {
@@ -132,11 +132,9 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
     generateMaze();
     camera.follow(player!);
 
-    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS)) {
+    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
       gyroscopeEvents.listen((event) {
-        _gyroDelta =
-            Vector2(event.y * gyroSensitivity, -event.x * gyroSensitivity);
+        _gyroDelta = Vector2(event.y * gyroSensitivity, -event.x * gyroSensitivity);
       });
     }
   }
@@ -160,8 +158,7 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
     }
     walls.clear();
 
-    List<List<int>> mazeGrid = List.generate(
-        effectiveGridSize, (_) => List.filled(effectiveGridSize, 1));
+    List<List<int>> mazeGrid = List.generate(effectiveGridSize, (_) => List.filled(effectiveGridSize, 1));
     Random rnd = Random();
     List<Vector2> stack = [Vector2(0, 0)];
     mazeGrid[0][0] = 0;
@@ -171,15 +168,20 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
       int x = current.x.toInt();
       int y = current.y.toInt();
 
-      List<List<int>> directions = [[2, 0], [-2, 0], [0, 2], [0, -2]];
+      List<List<int>> directions = [
+        [2, 0],
+        [-2, 0],
+        [0, 2],
+        [0, -2],
+      ];
       directions.shuffle(rnd);
 
       bool moved = false;
       for (var dir in directions) {
         int nx = x + dir[0];
         int ny = y + dir[1];
-        if (nx >= 0 && nx < effectiveGridSize && ny >= 0 &&
-            ny < effectiveGridSize && mazeGrid[ny][nx] == 1) {
+
+        if (nx >= 0 && nx < effectiveGridSize && ny >= 0 && ny < effectiveGridSize && mazeGrid[ny][nx] == 1) {
           mazeGrid[ny][nx] = 0;
           mazeGrid[y + dir[1] ~/ 2][x + dir[0] ~/ 2] = 0;
           stack.add(Vector2(nx.toDouble(), ny.toDouble()));
@@ -208,8 +210,7 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
     if (player != null) {
       player!.position = Vector2(cellSize / 2, cellSize / 2);
     }
-    goal.position = Vector2((effectiveGridSize - 1) * cellSize + cellSize / 2,
-        (effectiveGridSize - 1) * cellSize + cellSize / 2);
+    goal.position = Vector2((effectiveGridSize - 1) * cellSize + cellSize / 2, (effectiveGridSize - 1) * cellSize + cellSize / 2);
   }
 
   void nextLevel() {
@@ -219,57 +220,32 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
 
   @override
   void update(double dt) {
-    if (isPaused) return;
     super.update(dt);
+    if (!isPaused) {
+      Vector2 keyboardDelta = Vector2.zero();
+      if (kIsWeb || !(defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+        if (_pressedKeys.contains(LogicalKeyboardKey.arrowUp) || _pressedKeys.contains(LogicalKeyboardKey.keyW)) {
+          keyboardDelta.y = -1;
+        }
+        if (_pressedKeys.contains(LogicalKeyboardKey.arrowDown) || _pressedKeys.contains(LogicalKeyboardKey.keyS)) {
+          keyboardDelta.y = 1;
+        }
+        if (_pressedKeys.contains(LogicalKeyboardKey.arrowLeft) || _pressedKeys.contains(LogicalKeyboardKey.keyA)) {
+          keyboardDelta.x = -1;
+        }
+        if (_pressedKeys.contains(LogicalKeyboardKey.arrowRight) || _pressedKeys.contains(LogicalKeyboardKey.keyD)) {
+          keyboardDelta.x = 1;
+        }
+        if (keyboardDelta != Vector2.zero() && player != null) {
+          player!.tryMove(keyboardDelta.normalized() * dt, dt);
+        }
+      }
 
-    Vector2 moveDirection = Vector2.zero();
-
-    // Keyboard controls for Web/Desktop
-    if (kIsWeb || !(defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS)) {
-      if (_pressedKeys.contains(LogicalKeyboardKey.arrowUp) ||
-          _pressedKeys.contains(LogicalKeyboardKey.keyW)) {
-        moveDirection.y = -1;
-      }
-      if (_pressedKeys.contains(LogicalKeyboardKey.arrowDown) ||
-          _pressedKeys.contains(LogicalKeyboardKey.keyS)) {
-        moveDirection.y = 1;
-      }
-      if (_pressedKeys.contains(LogicalKeyboardKey.arrowLeft) ||
-          _pressedKeys.contains(LogicalKeyboardKey.keyA)) {
-        moveDirection.x = -1;
-      }
-      if (_pressedKeys.contains(LogicalKeyboardKey.arrowRight) ||
-          _pressedKeys.contains(LogicalKeyboardKey.keyD)) {
-        moveDirection.x = 1;
+      if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS) && player != null && _gyroDelta.length > 0.5) {
+        player!.tryMove(_gyroDelta.normalized(), dt);
+        _gyroDelta = Vector2.zero();
       }
     }
-
-    // Gyroscope controls for Mobile
-    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS) &&
-        _gyroDelta.length > 0.5) {
-      moveDirection = _gyroDelta;
-    }
-
-    // Apply movement
-    if (player != null && moveDirection != Vector2.zero()) {
-      player!.tryMove(moveDirection.normalized(), dt);
-    }
-
-    if (joystickDirection != Vector2.zero()) {
-      player?.tryMove(joystickDirection, dt);
-    }
-  }
-
-  Vector2 joystickDirection = Vector2.zero();
-
-  @override
-  KeyEventResult onKeyEvent(KeyEvent event,
-      Set<LogicalKeyboardKey> keysPressed) {
-    _pressedKeys.clear();
-    _pressedKeys.addAll(keysPressed);
-    return KeyEventResult.handled;
   }
 }
 
@@ -288,36 +264,37 @@ class JoystickState extends State<Joystick> {
   final double _joystickRadius = 60;
   final double _knobRadius = 20;
 
-  void _handlePan(Offset localPosition) {
-    final center = Offset(_joystickRadius, _joystickRadius);
-    Offset newPosition = localPosition - center;
-
-    double distance = newPosition.distance;
-    if (distance > _joystickRadius - _knobRadius) {
-      newPosition = Offset.fromDirection(
-          newPosition.direction, _joystickRadius - _knobRadius);
-    }
-
-    setState(() {
-      _position = newPosition;
-    });
-
-    if (distance > 10) { // Dead zone
-      widget.onMove(
-          Vector2(newPosition.dx, newPosition.dy).normalized() * 0.25);
-    } else {
-      widget.onMove(Vector2.zero());
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onPanStart: (details) => _handlePan(details.localPosition),
-      onPanUpdate: (details) => _handlePan(details.localPosition),
+      onPanStart: (details) {
+        setState(() {
+          _position = details.localPosition - Offset(_joystickRadius, _joystickRadius);
+        });
+      },
+      onPanUpdate: (details) {
+        setState(() {
+          _position = details.localPosition - Offset(_joystickRadius, _joystickRadius);
+          double distance = _position.distance;
+          if (distance > _joystickRadius - _knobRadius) {
+            double angle = _position.direction;
+            _position = Offset.fromDirection(angle, _joystickRadius - _knobRadius);
+          }
+          if (distance > 10) {
+            widget.onMove(Vector2(
+                _position.dx / (_joystickRadius - _knobRadius), _position.dy / (_joystickRadius - _knobRadius))
+                .normalized() *
+                0.25);
+          } else {
+            widget.onMove(Vector2.zero());
+          }
+        });
+      },
       onPanEnd: (_) {
-        setState(() => _position = Offset.zero);
-        widget.onMove(Vector2.zero());
+        setState(() {
+          _position = Offset.zero;
+          widget.onMove(Vector2.zero());
+        });
       },
       child: Container(
         width: _joystickRadius * 2,
@@ -326,291 +303,253 @@ class JoystickState extends State<Joystick> {
           shape: BoxShape.circle,
           color: Colors.grey.withOpacity(0.3),
         ),
-        child: Center(
-          child: Transform.translate(
-            offset: _position,
-            child: Container(
-              width: _knobRadius * 2,
-              height: _knobRadius * 2,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFB0BEC5),
+        child: Stack(
+          children: [
+            Positioned(
+              left: _joystickRadius + _position.dx - _knobRadius,
+              top: _joystickRadius + _position.dy - _knobRadius,
+              child: Container(
+                width: _knobRadius * 2,
+                height: _knobRadius * 2,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFB0BEC5),
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-
 // ================= Pantalla del juego =================
-
-// Provider para mantener una única instancia del juego
-final gameProvider = StateProvider<SkullMazeGame?>((ref) => null);
-
-class GameScreen extends ConsumerStatefulWidget {
+class GameScreen extends ConsumerWidget {
   final String level;
 
   const GameScreen({super.key, required this.level});
 
-  @override
-  ConsumerState<GameScreen> createState() => _GameScreenState();
-}
-
-class _GameScreenState extends ConsumerState<GameScreen> {
-  static AudioPlayer? _levelMusicPlayer;
-
-  // Variables para la animación de fundido
-  double _overlayOpacity = 0.0;
-  bool _isExiting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Creamos la instancia del juego aquí
-    final newGame = SkullMazeGame()
-      ..level = int.parse(widget.level);
-    Future.microtask(() =>
-    ref
-        .read(gameProvider.notifier)
-        .state = newGame);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startLevelMusic(newGame);
-    });
-  }
-
-  Future<void> _playClickSound() async {
-    final game = ref.read(gameProvider);
-    if (game != null && game.isVolumeOn) {
+  Future<void> _playClickSound(SkullMazeGame game) async {
+    if (game.isVolumeOn) {
       final clickPlayer = AudioPlayer();
-      await clickPlayer.play(
-          AssetSource('audio/pause.mp3'), volume: game.volumeLevel);
-      // No disponer inmediatamente para que se escuche
+      await clickPlayer.play(AssetSource('audio/pause.mp3'), volume: game.volumeLevel);
+      await clickPlayer.dispose();
     }
   }
 
-  Future<void> _playOptionClickSound() async {
-    final game = ref.read(gameProvider);
-    if (game != null && game.isVolumeOn) {
+  Future<void> _playOptionClickSound(SkullMazeGame game) async {
+    if (game.isVolumeOn) {
       final clickPlayer = AudioPlayer();
-      await clickPlayer.play(
-          AssetSource('audio/b_menu.mp3'), volume: game.volumeLevel);
+      await clickPlayer.play(AssetSource('audio/b_menu.mp3'), volume: game.volumeLevel);
+      await clickPlayer.dispose();
     }
   }
 
-  Future<void> _startLevelMusic(SkullMazeGame game) async {
+  Future<void> _startLevelMusic(SkullMazeGame game, BuildContext context, WidgetRef ref) async {
+    // Pause global music
     final globalPlayer = ref.read(audioPlayerProvider);
     await globalPlayer.pause();
 
     if (game.isVolumeOn) {
-      await _levelMusicPlayer?.stop();
-      await _levelMusicPlayer?.dispose();
-
-      _levelMusicPlayer = AudioPlayer();
-      await _levelMusicPlayer!.setSource(AssetSource('audio/level.mp3'));
-      await _levelMusicPlayer!.setReleaseMode(ReleaseMode.loop);
-      await _levelMusicPlayer!.setVolume(game.volumeLevel);
-      await _levelMusicPlayer!.resume();
+      final levelMusicPlayer = AudioPlayer();
+      await levelMusicPlayer.setSource(AssetSource('audio/level.mp3'));
+      await levelMusicPlayer.setReleaseMode(ReleaseMode.loop);
+      await levelMusicPlayer.setVolume(0.0);
+      await levelMusicPlayer.play(AssetSource('audio/level.mp3'));
+      // Fade-in using Future.delayed
+      const fadeDuration = Duration(seconds: 2);
+      const steps = 20;
+      final durationStep = fadeDuration.inMilliseconds ~/ steps;
+      double currentVolume = 0.0;
+      double volumeStep = game.volumeLevel / steps;
+      for (int i = 0; i < steps; i++) {
+        if (!context.mounted) {
+          await levelMusicPlayer.stop();
+          await levelMusicPlayer.dispose();
+          return;
+        }
+        currentVolume += volumeStep;
+        await levelMusicPlayer.setVolume(currentVolume.clamp(0.0, game.volumeLevel));
+        await Future.delayed(Duration(milliseconds: durationStep));
+      }
+      await levelMusicPlayer.setVolume(game.volumeLevel);
+      _levelMusicPlayer = levelMusicPlayer;
     }
   }
 
-  @override
-  void dispose() {
-    _levelMusicPlayer?.stop();
-    _levelMusicPlayer?.dispose();
-    _levelMusicPlayer = null;
+  static AudioPlayer? _levelMusicPlayer;
 
-    // Reanuda la música global solo si no estamos en medio de una salida controlada
-    if (!_isExiting) {
-      final globalPlayer = ref.read(audioPlayerProvider);
-      globalPlayer.resume();
+  void _showPauseMenu(BuildContext context, WidgetRef ref) {
+    final game = SkullMazeGame()..level = int.parse(level);
+    _playClickSound(game);
+    if (game.isVolumeOn && _levelMusicPlayer != null) {
+      _levelMusicPlayer!.pause();
     }
-
-    // Limpia el provider del juego al salir de la pantalla
-    Future.microtask(() =>
-    ref
-        .read(gameProvider.notifier)
-        .state = null);
-    super.dispose();
-  }
-
-  void _showPauseMenu() {
-    final game = ref.read(gameProvider);
-    if (game == null) return;
-
-    _playClickSound();
-    _levelMusicPlayer?.pause();
     game.isPaused = true;
 
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        // StatefulBuilder permite actualizar la UI del diálogo
-        return StatefulBuilder(
-          builder: (context, setStateDialog) { // Renombrado para claridad
-            return AlertDialog(
-              backgroundColor: const Color(0xFF1C1C1C),
-              title: Text('Pausa', style: GoogleFonts.pressStart2p(
-                  color: const Color(0xFF7CFC00))),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      _playOptionClickSound();
-                      Navigator.pop(context); // Cierra el diálogo
-                      // La lógica de reanudar está en el `then` de showDialog
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1C),
+        title: Text('Pausa', style: GoogleFonts.pressStart2p(color: const Color(0xFF7CFC00))),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextButton(
+              onPressed: () async {
+                await _playOptionClickSound(game);
+                game.isPaused = false;
+                if (game.isVolumeOn && _levelMusicPlayer != null) {
+                  await _levelMusicPlayer!.setVolume(game.volumeLevel);
+                  await _levelMusicPlayer!.resume();
+                }
+                Navigator.pop(context);
+              },
+              child: Text('Reanudar', style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5))),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Volumen: ', style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5))),
+                Expanded(
+                  child: Slider(
+                    value: game.volumeLevel,
+                    min: 0.0,
+                    max: 1.0,
+                    divisions: 10,
+                    label: (game.volumeLevel * 100).round().toString() + '%',
+                    onChanged: (value) async {
+                      game.volumeLevel = value;
+                      if (game.isVolumeOn && _levelMusicPlayer != null) {
+                        await _levelMusicPlayer!.setVolume(value);
+                      }
+                      print('Volumen ajustado a $value');
                     },
-                    child: Text('Reanudar',
-                        style: GoogleFonts.openSans(color: const Color(
-                            0xFFB0BEC5))),
+                    activeColor: const Color(0xFF7CFC00),
+                    inactiveColor: const Color(0xFFB0BEC5),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Volumen:',
-                          style: GoogleFonts.openSans(color: const Color(
-                              0xFFB0BEC5))),
-                      Expanded(
-                        child: Slider(
-                          value: game.volumeLevel,
-                          min: 0.0,
-                          max: 1.0,
-                          divisions: 10,
-                          label: '${(game.volumeLevel * 100).round()}%',
-                          onChanged: (value) async {
-                            // Actualiza el estado visual del slider y el volumen del juego
-                            setStateDialog(() {
-                              game.volumeLevel = value;
-                            });
-                            // Aplica el volumen a la música en tiempo real
-                            await _levelMusicPlayer?.setVolume(value);
-                          },
-                          activeColor: const Color(0xFF7CFC00),
-                          inactiveColor: const Color(0xFFB0BEC5),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Vibración: ',
-                          style: GoogleFonts.openSans(color: const Color(
-                              0xFFB0BEC5))),
-                      Switch(
-                        value: game.isVibrationOn,
-                        onChanged: (value) {
-                          setStateDialog(() {
-                            game.isVibrationOn = value;
-                          });
-                          print('Vibración ${game.isVibrationOn
-                              ? "activada"
-                              : "desactivada"}');
-                        },
-                        activeColor: const Color(0xFF7CFC00),
-                        inactiveThumbColor: const Color(0xFFB0BEC5),
-                      ),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      // 1. Marca que estamos saliendo para una gestión correcta del audio.
-                      _isExiting = true;
-                      _playOptionClickSound();
-
-                      // 2. Cierra el menú de pausa.
-                      Navigator.of(context).pop();
-
-                      // 3. Activa la animación de fundido actualizando el estado del Widget padre.
-                      setState(() {
-                        _overlayOpacity = 1.0;
-                      });
-
-                      // 4. Espera a que la animación termine y luego navega.
-                      Future.delayed(const Duration(milliseconds: 500), () {
-                        game.isPaused = false;
-                        final globalPlayer = ref.read(audioPlayerProvider);
-                        globalPlayer.resume();
-                        GoRouter.of(context).go('/main_menu');
-                      });
-                    },
-                    child: Text('Salir al Menú',
-                        style: GoogleFonts.openSans(color: const Color(
-                            0xFFB0BEC5))),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ).then((_) {
-      // Se ejecuta al cerrar el diálogo, solo reanuda si no estamos saliendo.
-      if (!_isExiting) {
-        game.isPaused = false;
-        if (game.isVolumeOn) {
-          _levelMusicPlayer?.resume();
-        }
-      }
-    });
+                ),
+              ],
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Vibración: ', style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5))),
+                Switch(
+                  value: game.isVibrationOn,
+                  onChanged: (value) {
+                    game.isVibrationOn = value;
+                    print('Vibración ${game.isVibrationOn ? "activada" : "desactivada"}');
+                  },
+                  activeColor: const Color(0xFF7CFC00),
+                  inactiveThumbColor: const Color(0xFFB0BEC5),
+                ),
+              ],
+            ),
+            TextButton(
+              onPressed: () async {
+                await _playOptionClickSound(game);
+                if (_levelMusicPlayer != null) {
+                  await _levelMusicPlayer!.stop();
+                  await _levelMusicPlayer!.dispose();
+                  _levelMusicPlayer = null;
+                }
+                // Resume global music
+                final globalPlayer = ref.read(audioPlayerProvider);
+                await globalPlayer.setVolume(0.8);
+                await globalPlayer.resume();
+                context.go('/levels');
+              },
+              child: Text('Salir', style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5))),
+            ),
+            TextButton(
+              onPressed: game.player != null && game.player!._goalReached
+                  ? () async {
+                await _playOptionClickSound(game);
+                game.nextLevel();
+                if (_levelMusicPlayer != null) {
+                  await _levelMusicPlayer!.stop();
+                  await _levelMusicPlayer!.dispose();
+                  _levelMusicPlayer = null;
+                }
+                await _startLevelMusic(game, context, ref);
+                Navigator.pop(context);
+              }
+                  : null,
+              child: Text('Siguiente Nivel', style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5))),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
-  Widget build(BuildContext context) {
-    final game = ref.watch(gameProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final game = SkullMazeGame()..level = int.parse(level);
+    final screenSize = MediaQuery.of(context).size;
+    final isMobile = kIsWeb ? screenSize.width < 600 : (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
 
-    // Muestra un indicador de carga mientras el juego se inicializa
-    if (game == null) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    bool isMobile = !kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_levelMusicPlayer == null && game.isVolumeOn) {
+        await _startLevelMusic(game, context, ref);
+      }
+    });
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          GameWidget(game: game),
-          Positioned(
-            top: 40,
-            right: 20,
-            child: IconButton(
-              icon: const Icon(Icons.pause, color: Colors.white, size: 30),
-              onPressed: _showPauseMenu,
+      body: Container(
+        width: screenSize.width,
+        height: screenSize.height,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF2A1B3D), Color(0xFF1C1C1C), Color(0xFF000000)],
+          ),
+        ),
+        child: SafeArea(
+          child: RawKeyboardListener(
+            focusNode: FocusNode()..requestFocus(),
+            autofocus: true,
+            onKey: (RawKeyEvent event) {
+              if (event is RawKeyDownEvent) {
+                game._pressedKeys.add(event.logicalKey);
+              } else if (event is RawKeyUpEvent) {
+                game._pressedKeys.remove(event.logicalKey);
+              }
+            },
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                GameWidget(
+                  game: game,
+                  focusNode: FocusNode(),
+                ),
+                if (isMobile)
+                  Positioned(
+                    left: 20,
+                    bottom: 20,
+                    child: Joystick(
+                      onMove: (Vector2 direction) {
+                        if (game.player != null && direction.length > 0) {
+                          game.player!.tryMove(direction, 0.05);
+                        }
+                      },
+                    ),
+                  ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: IconButton(
+                    icon: const Icon(Icons.pause, color: Color(0xFFB0BEC5), size: 30),
+                    onPressed: () => _showPauseMenu(context, ref),
+                  ),
+                ),
+              ],
             ),
           ),
-          if (isMobile)
-            Positioned(
-              bottom: 40,
-              left: 40,
-              child: Joystick(
-                onMove: (direction) {
-                  game.joystickDirection = direction;
-                },
-              ),
-            ),
-
-          // WIDGET DE SUPERPOSICIÓN PARA FUNDIDO A NEGRO
-          IgnorePointer(
-            child: AnimatedOpacity(
-              opacity: _overlayOpacity,
-              duration: const Duration(milliseconds: 500),
-              child: Container(
-                color: Colors.black,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
