@@ -125,7 +125,7 @@ class Rankings extends ConsumerWidget {
                                     ),
                                   ),
                                   Text(
-                                    '${1000 - index * 100} pts',
+                                    '${1000 - index * 100} puntos',
                                     style: GoogleFonts.pressStart2p(
                                       textStyle: TextStyle(
                                         color: Color(0xFFFF007F),
