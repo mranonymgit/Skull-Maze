@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../main.dart'; // Import main.dart for audioPlayerProvider
@@ -53,7 +53,7 @@ class Player extends PositionComponent
   Player({required super.position, super.anchor = Anchor.center});
 
   Vector2 _previousPosition = Vector2.zero(); // Almacena la posición anterior del jugador para revertir movimientos no válidos.
-  final double playerSpeed = 250; // Define la velocidad de movimiento del jugador.
+  final double playerSpeed = 2000; // Define la velocidad de movimiento del jugador.
   bool _goalReached = false; // Bandera para saber si el jugador ha alcanzado la meta.
 
   @override
@@ -64,13 +64,59 @@ class Player extends PositionComponent
     _previousPosition = position.clone(); // Guarda la posición inicial como la "anterior".
   }
 
-  // Intenta mover al jugador.
+  // Intenta mover al jugador con verificación de colisiones.
   void tryMove(Vector2 delta, double dt) {
+    if (delta == Vector2.zero()) return; // Evita movimientos nulos.
+
     _previousPosition = position.clone(); // Guarda la posición actual antes de moverse.
-    position.add(delta * dt * playerSpeed); // Actualiza la posición basándose en la dirección (delta), el tiempo (dt) y la velocidad.
+    Vector2 newPosition = position + delta * dt * playerSpeed; // Calcula la nueva posición.
+
+    // Verifica colisiones con las paredes antes de mover.
+    bool canMove = true;
+    for (var wall in gameRef.walls) {
+      if (wall != null && _willCollide(newPosition, wall)) {
+        canMove = false;
+        break;
+      }
+    }
+
+    if (canMove) {
+      position = newPosition; // Aplica el movimiento si no hay colisión.
+    } else {
+      position = _previousPosition; // Revierte a la posición anterior si hay colisión.
+    }
+
     // Limita la posición del jugador para que no se salga de los límites del lienzo del juego.
-    // position.x = position.x.clamp(size.x / 2, gameRef.canvasSize.x - size.x / 2);
-    // position.y = position.y.clamp(size.y / 2, gameRef.canvasSize.y - size.y / 2);
+    position.x = position.x.clamp(size.x / 2, gameRef.canvasSize.x - size.x / 2);
+    position.y = position.y.clamp(size.y / 2, gameRef.canvasSize.y - size.y / 2);
+  }
+
+  bool _willCollide(Vector2 newPosition, Wall wall) {
+    if (wall == null) return false;
+    // Verificar que el tamaño de la pared no sea inválido
+    if (wall.size.x <= 0 || wall.size.y <= 0) return false;
+
+    // Calcular la distancia del centro del círculo a los bordes del rectángulo
+    double circleRadius = size.x / 2;
+    if (circleRadius.isNaN || circleRadius.isInfinite) return false;
+    double circleDistanceX = (newPosition.x - wall.position.x - wall.size.x / 2).abs();
+    double circleDistanceY = (newPosition.y - wall.position.y - wall.size.y / 2).abs();
+    if (circleDistanceX.isNaN || circleDistanceX.isInfinite || circleDistanceY.isNaN || circleDistanceY.isInfinite) return false;
+
+    if (circleDistanceX > (wall.size.x / 2 + circleRadius)) return false;
+    if (circleDistanceY > (wall.size.y / 2 + circleRadius)) return false;
+
+    if (circleDistanceX <= (wall.size.x / 2)) return true;
+    if (circleDistanceY <= (wall.size.y / 2)) return true;
+
+    // Validar las restas antes de calcular el cuadrado
+    double deltaX = circleDistanceX - wall.size.x / 2;
+    double deltaY = circleDistanceY - wall.size.y / 2;
+    if (deltaX.isNaN || deltaX.isInfinite || deltaY.isNaN || deltaY.isInfinite) return false;
+
+    double cornerDistanceSq = deltaX * deltaX + deltaY * deltaY;
+
+    return cornerDistanceSq <= circleRadius * circleRadius;
   }
 
   @override
@@ -87,13 +133,14 @@ class Player extends PositionComponent
       // Si la colisión es con un muro...
       position = _previousPosition; // ...revierte la posición del jugador a la que tenía antes de moverse.
       final Vector2 movementDelta = position - _previousPosition; // Calcula la diferencia de posición entre la posición actual y la anterior.
-      if (movementDelta.x.abs() > movementDelta.y.abs()){
+      if (movementDelta.x.abs() > movementDelta.y.abs()) {
         position.x = _previousPosition.x;
       } else {
         position.y = _previousPosition.y;
       }
     }
   }
+
   @override
   void render(Canvas canvas) {
     // Dibuja al jugador en el lienzo del juego.
@@ -161,7 +208,7 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
     List<List<int>> mazeGrid = List.generate(effectiveGridSize, (_) => List.filled(effectiveGridSize, 1));
     Random rnd = Random();
     List<Vector2> stack = [Vector2(0, 0)];
-    mazeGrid[0][0] = 0;
+    mazeGrid[0][0] = 0; // Punto de inicio siempre abierto
 
     while (stack.isNotEmpty) {
       var current = stack.last;
@@ -192,6 +239,28 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
       if (!moved) {
         stack.removeLast();
       }
+    }
+
+    // Asegurar camino a la meta
+    int endX = effectiveGridSize - 1;
+    int endY = effectiveGridSize - 1;
+    if (mazeGrid[endY][endX] == 1) {
+      // Si la meta está bloqueada, abrir un camino hacia ella
+      List<List<int>> path = [];
+      int cx = 0, cy = 0;
+      while (cx != endX || cy != endY) {
+        mazeGrid[cy][cx] = 0;
+        path.add([cx, cy]);
+        int nextX = cx;
+        int nextY = cy;
+        if (cx < endX) nextX++;
+        else if (cx > endX) nextX--;
+        else if (cy < endY) nextY++;
+        else if (cy > endY) nextY--;
+        cx = nextX;
+        cy = nextY;
+      }
+      mazeGrid[endY][endX] = 0; // Asegurar que la meta esté abierta
     }
 
     for (int y = 0; y < effectiveGridSize; y++) {
@@ -332,17 +401,21 @@ class GameScreen extends ConsumerWidget {
 
   Future<void> _playClickSound(SkullMazeGame game) async {
     if (game.isVolumeOn) {
-      final clickPlayer = AudioPlayer();
-      await clickPlayer.play(AssetSource('audio/pause.mp3'), volume: game.volumeLevel);
-      await clickPlayer.dispose();
+      // Comentado temporalmente para evitar errores si los archivos no existen
+      // final clickPlayer = AudioPlayer();
+      // await clickPlayer.play(AssetSource('audio/pause.mp3'), volume: game.volumeLevel);
+      // await clickPlayer.dispose();
+      return; // Desactiva audio temporalmente
     }
   }
 
   Future<void> _playOptionClickSound(SkullMazeGame game) async {
     if (game.isVolumeOn) {
-      final clickPlayer = AudioPlayer();
-      await clickPlayer.play(AssetSource('audio/b_menu.mp3'), volume: game.volumeLevel);
-      await clickPlayer.dispose();
+      // Comentado temporalmente para evitar errores si los archivos no existen
+      // final clickPlayer = AudioPlayer();
+      // await clickPlayer.play(AssetSource('audio/b_menu.mp3'), volume: game.volumeLevel);
+      // await clickPlayer.dispose();
+      return; // Desactiva audio temporalmente
     }
   }
 
@@ -352,29 +425,30 @@ class GameScreen extends ConsumerWidget {
     await globalPlayer.pause();
 
     if (game.isVolumeOn) {
-      final levelMusicPlayer = AudioPlayer();
-      await levelMusicPlayer.setSource(AssetSource('audio/level.mp3'));
-      await levelMusicPlayer.setReleaseMode(ReleaseMode.loop);
-      await levelMusicPlayer.setVolume(0.0);
-      await levelMusicPlayer.play(AssetSource('audio/level.mp3'));
-      // Fade-in using Future.delayed
-      const fadeDuration = Duration(seconds: 2);
-      const steps = 20;
-      final durationStep = fadeDuration.inMilliseconds ~/ steps;
-      double currentVolume = 0.0;
-      double volumeStep = game.volumeLevel / steps;
-      for (int i = 0; i < steps; i++) {
-        if (!context.mounted) {
-          await levelMusicPlayer.stop();
-          await levelMusicPlayer.dispose();
-          return;
-        }
-        currentVolume += volumeStep;
-        await levelMusicPlayer.setVolume(currentVolume.clamp(0.0, game.volumeLevel));
-        await Future.delayed(Duration(milliseconds: durationStep));
-      }
-      await levelMusicPlayer.setVolume(game.volumeLevel);
-      _levelMusicPlayer = levelMusicPlayer;
+      // Comentado temporalmente para evitar errores si los archivos no existen
+      // final levelMusicPlayer = AudioPlayer();
+      // await levelMusicPlayer.setSource(AssetSource('audio/level.mp3'));
+      // await levelMusicPlayer.setReleaseMode(ReleaseMode.loop);
+      // await levelMusicPlayer.setVolume(0.0);
+      // await levelMusicPlayer.play(AssetSource('audio/level.mp3'));
+      // const fadeDuration = Duration(seconds: 2);
+      // const steps = 20;
+      // final durationStep = fadeDuration.inMilliseconds ~/ steps;
+      // double currentVolume = 0.0;
+      // double volumeStep = game.volumeLevel / steps;
+      // for (int i = 0; i < steps; i++) {
+      //   if (!context.mounted) {
+      //     await levelMusicPlayer.stop();
+      //     await levelMusicPlayer.dispose();
+      //     return;
+      //   }
+      //   currentVolume += volumeStep;
+      //   await levelMusicPlayer.setVolume(currentVolume.clamp(0.0, game.volumeLevel));
+      //   await Future.delayed(Duration(milliseconds: durationStep));
+      // }
+      // await levelMusicPlayer.setVolume(game.volumeLevel);
+      // _levelMusicPlayer = levelMusicPlayer;
+      return; // Desactiva audio temporalmente
     }
   }
 
@@ -384,7 +458,8 @@ class GameScreen extends ConsumerWidget {
     final game = SkullMazeGame()..level = int.parse(level);
     _playClickSound(game);
     if (game.isVolumeOn && _levelMusicPlayer != null) {
-      _levelMusicPlayer!.pause();
+      // Comentado temporalmente para evitar errores
+      // _levelMusicPlayer!.pause();
     }
     game.isPaused = true;
 
@@ -401,8 +476,9 @@ class GameScreen extends ConsumerWidget {
                 await _playOptionClickSound(game);
                 game.isPaused = false;
                 if (game.isVolumeOn && _levelMusicPlayer != null) {
-                  await _levelMusicPlayer!.setVolume(game.volumeLevel);
-                  await _levelMusicPlayer!.resume();
+                  // Comentado temporalmente para evitar errores
+                  // await _levelMusicPlayer!.setVolume(game.volumeLevel);
+                  // await _levelMusicPlayer!.resume();
                 }
                 Navigator.pop(context);
               },
@@ -421,9 +497,10 @@ class GameScreen extends ConsumerWidget {
                     label: (game.volumeLevel * 100).round().toString() + '%',
                     onChanged: (value) async {
                       game.volumeLevel = value;
-                      if (game.isVolumeOn && _levelMusicPlayer != null) {
-                        await _levelMusicPlayer!.setVolume(value);
-                      }
+                      // Comentado temporalmente para evitar errores
+                      // if (game.isVolumeOn && _levelMusicPlayer != null) {
+                      //   await _levelMusicPlayer!.setVolume(value);
+                      // }
                       print('Volumen ajustado a $value');
                     },
                     activeColor: const Color(0xFF7CFC00),
@@ -451,14 +528,16 @@ class GameScreen extends ConsumerWidget {
               onPressed: () async {
                 await _playOptionClickSound(game);
                 if (_levelMusicPlayer != null) {
-                  await _levelMusicPlayer!.stop();
-                  await _levelMusicPlayer!.dispose();
+                  // Comentado temporalmente para evitar errores
+                  // await _levelMusicPlayer!.stop();
+                  // await _levelMusicPlayer!.dispose();
                   _levelMusicPlayer = null;
                 }
                 // Resume global music
                 final globalPlayer = ref.read(audioPlayerProvider);
-                await globalPlayer.setVolume(0.8);
-                await globalPlayer.resume();
+                // Comentado temporalmente para evitar errores
+                // await globalPlayer.setVolume(0.8);
+                // await globalPlayer.resume();
                 context.go('/levels');
               },
               child: Text('Salir', style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5))),
@@ -469,8 +548,9 @@ class GameScreen extends ConsumerWidget {
                 await _playOptionClickSound(game);
                 game.nextLevel();
                 if (_levelMusicPlayer != null) {
-                  await _levelMusicPlayer!.stop();
-                  await _levelMusicPlayer!.dispose();
+                  // Comentado temporalmente para evitar errores
+                  // await _levelMusicPlayer!.stop();
+                  // await _levelMusicPlayer!.dispose();
                   _levelMusicPlayer = null;
                 }
                 await _startLevelMusic(game, context, ref);
