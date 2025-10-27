@@ -92,6 +92,7 @@ flutter:
     - assets/audio/toggle.mp3
     - assets/audio/b_menu.mp3
     - assets/audio/level.mp3
+    - assets/audio/click.mp3
   ###################### TILES ####################################
     - assets/tiles/maze_tileset.json
     - assets/tiles/maze_map.json
