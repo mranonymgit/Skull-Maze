@@ -2,24 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:audioplayers/audioplayers.dart';
-import '../main.dart'; // Importa el audioPlayerProvider
+import '../providers/app_providers.dart';
+import '../controllers/settings_controller.dart';
+import '../controllers/auth_controller.dart';
+import '../controllers/ranking_controller.dart';
+import '../services/audio_service.dart'; // ⭐ AGREGAR
 
-class Settings extends ConsumerStatefulWidget {
+class Settings extends ConsumerWidget {
   const Settings({super.key});
 
   @override
-  _SettingsState createState() => _SettingsState();
-}
-
-class _SettingsState extends ConsumerState<Settings> {
-  bool _musicEnabled = true;
-  bool _soundEffectsEnabled = true;
-  bool _notificationsEnabled = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final audioPlayer = ref.watch(audioPlayerProvider); // Accede al AudioPlayer global
+  Widget build(BuildContext context, WidgetRef ref) {
+    final audioService = ref.watch(audioServiceProvider);
+    final settingsState = ref.watch(settingsControllerProvider);
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -28,14 +23,14 @@ class _SettingsState extends ConsumerState<Settings> {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: size.height),
           child: Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF2A1B3D), // Morado oscuro
-                  Color(0xFF1C1C1C), // Gris oscuro
-                  Color(0xFF000000), // Negro
+                  Color(0xFF2A1B3D),
+                  Color(0xFF1C1C1C),
+                  Color(0xFF000000),
                 ],
               ),
             ),
@@ -43,27 +38,27 @@ class _SettingsState extends ConsumerState<Settings> {
               children: [
                 // Encabezado con logo
                 ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: 600),
+                  constraints: const BoxConstraints(maxWidth: 600),
                   child: Container(
                     height: size.height * 0.15,
-                    padding: EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(20.0),
                     child: Center(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Image.asset('assets/images/skull_logo.png', height: 40),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Text(
                             'Configuración',
                             style: GoogleFonts.pressStart2p(
                               textStyle: TextStyle(
-                                color: Color(0xFF7CFC00), // Verde neón
+                                color: const Color(0xFF7CFC00),
                                 fontSize: size.width > 800 ? 24.0 : size.width * 0.06,
                                 letterSpacing: 1.5,
                                 shadows: [
                                   Shadow(
-                                    color: Color(0xFF0B2E62).withOpacity(0.3),
-                                    offset: Offset(0.5, 0.5),
+                                    color: const Color(0xFF0B2E62).withOpacity(0.3),
+                                    offset: const Offset(0.5, 0.5),
                                     blurRadius: 5,
                                   ),
                                 ],
@@ -75,64 +70,251 @@ class _SettingsState extends ConsumerState<Settings> {
                     ),
                   ),
                 ),
+
                 // Contenido
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       Text(
-                        'Ajustes',
+                        'Ajustes de Audio',
                         style: GoogleFonts.pressStart2p(
-                          textStyle: TextStyle(
+                          textStyle: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                           ),
                         ),
                       ),
-                      SizedBox(height: 20),
-                      _buildToggleOption(context, 'Música', _musicEnabled, (value) {
-                        setState(() => _musicEnabled = value);
-                        if (!value) {
-                          audioPlayer.pause();
-                        } else {
-                          audioPlayer.resume();
-                        }
-                      }),
-                      SizedBox(height: 15),
-                      _buildToggleOption(context, 'Efectos de sonido', _soundEffectsEnabled, (value) {
-                        setState(() => _soundEffectsEnabled = value);
-                      }),
-                      SizedBox(height: 15),
-                      _buildToggleOption(context, 'Notificaciones', _notificationsEnabled, (value) {
-                        setState(() => _notificationsEnabled = value);
-                      }),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 20),
+
+                      // Toggle de Música
+                      _buildToggleOption(
+                        context,
+                        ref,
+                        'Música',
+                        settingsState.musicEnabled,
+                            (value) async {
+                          await ref.read(settingsControllerProvider.notifier).toggleMusic(value);
+                        },
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Toggle de Efectos de Sonido
+                      _buildToggleOption(
+                        context,
+                        ref,
+                        'Efectos de sonido',
+                        settingsState.soundEffectsEnabled,
+                            (value) async {
+                          await ref.read(settingsControllerProvider.notifier).toggleSoundEffects(value);
+                        },
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Control de Volumen
+                      _buildVolumeSlider(
+                        context,
+                        ref,
+                        settingsState.volumeLevel,
+                      ),
+                      const SizedBox(height: 30),
+
+                      // Ajustes de Juego
+                      Text(
+                        'Ajustes de Juego',
+                        style: GoogleFonts.pressStart2p(
+                          textStyle: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Toggle de Vibración
+                      _buildToggleOption(
+                        context,
+                        ref,
+                        'Vibración',
+                        settingsState.vibrationEnabled,
+                            (value) async {
+                          await ref.read(settingsControllerProvider.notifier).toggleVibration(value);
+                        },
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Toggle de Notificaciones
+                      _buildToggleOption(
+                        context,
+                        ref,
+                        'Notificaciones',
+                        settingsState.notificationsEnabled,
+                            (value) async {
+                          await ref.read(settingsControllerProvider.notifier).toggleNotifications(value);
+                        },
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Toggle de Giroscopio
+                      _buildToggleOption(
+                        context,
+                        ref,
+                        'Giroscopio',
+                        settingsState.gyroscopeEnabled,
+                            (value) async {
+                          await ref.read(settingsControllerProvider.notifier).toggleGyroscope(value);
+                        },
+                      ),
+                      const SizedBox(height: 30),
+
+                      // Botones de acción
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // Botón Guardar
+                          ElevatedButton(
+                            onPressed: () async {
+                              await ref.read(settingsControllerProvider.notifier).saveSettings();
+
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Ajustes guardados'),
+                                    backgroundColor: Color(0xFF7CFC00),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7CFC00),
+                              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: Text(
+                              'Guardar',
+                              style: GoogleFonts.pressStart2p(
+                                textStyle: const TextStyle(
+                                  color: Color(0xFF000000),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // Botón Restaurar
+                          OutlinedButton(
+                            onPressed: () async {
+                              await ref.read(settingsControllerProvider.notifier).resetToDefault();
+
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Ajustes restaurados'),
+                                    backgroundColor: Color(0xFF7CFC00),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              }
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFFF007F)),
+                              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: Text(
+                              'Restaurar',
+                              style: GoogleFonts.pressStart2p(
+                                textStyle: const TextStyle(
+                                  color: Color(0xFFFF007F),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 30),
+
+                      // Botón de Cerrar Sesión
                       Center(
                         child: ElevatedButton(
                           onPressed: () async {
-                            if (_soundEffectsEnabled) {
-                              final effectPlayer = AudioPlayer(); // AudioPlayer local para efectos
-                              await effectPlayer.play(AssetSource('audio/save.mp3'), volume: 0.8); // Sin bucle
-                            }
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Ajustes guardados')),
+                            await audioService.playClickSound();
+
+                            // Mostrar confirmación
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: const Color(0xFF1C1C1C),
+                                title: Text(
+                                  '¿Cerrar sesión?',
+                                  style: GoogleFonts.pressStart2p(
+                                    textStyle: const TextStyle(
+                                      color: Color(0xFF7CFC00),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                                content: Text(
+                                  '¿Estás seguro de que quieres cerrar sesión?',
+                                  style: GoogleFonts.openSans(
+                                    textStyle: const TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: Text(
+                                      'Cancelar',
+                                      style: GoogleFonts.openSans(
+                                        textStyle: const TextStyle(
+                                          color: Color(0xFFB0BEC5),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: Text(
+                                      'Cerrar sesión',
+                                      style: GoogleFonts.openSans(
+                                        textStyle: const TextStyle(
+                                          color: Color(0xFFFF4500),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             );
+
+                            if (confirmed == true && context.mounted) {
+                              await ref.read(authControllerProvider.notifier).signOut();
+                              context.go('/login');
+                            }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF7CFC00),
-                            padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                            backgroundColor: const Color(0xFFFF4500),
+                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           child: Text(
-                            'Guardar',
+                            'Cerrar Sesión',
                             style: GoogleFonts.pressStart2p(
-                              textStyle: TextStyle(
-                                color: Color(0xFF000000),
-                                fontSize: 14,
+                              textStyle: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
                               ),
                             ),
                           ),
@@ -167,16 +349,18 @@ class _SettingsState extends ConsumerState<Settings> {
           ),
         ],
         currentIndex: 3, // Configuración seleccionado
-        selectedItemColor: Color(0xFF7CFC00),
-        unselectedItemColor: Color(0xFFB0BEC5),
-        backgroundColor: Color(0xFF1C1C1C),
+        selectedItemColor: const Color(0xFF7CFC00),
+        unselectedItemColor: const Color(0xFFB0BEC5),
+        backgroundColor: const Color(0xFF1C1C1C),
         type: BottomNavigationBarType.fixed,
-        onTap: (index) {
+        onTap: (index) async {
+          await audioService.playClickSound();
           switch (index) {
             case 0:
               context.go('/character-customization');
               break;
             case 1:
+              await ref.read(rankingControllerProvider.notifier).loadTopScores();
               context.go('/rankings');
               break;
             case 2:
@@ -190,31 +374,73 @@ class _SettingsState extends ConsumerState<Settings> {
     );
   }
 
-  Widget _buildToggleOption(BuildContext context, String title, bool value, Function(bool) onChanged) {
+  Widget _buildToggleOption(
+      BuildContext context,
+      WidgetRef ref,
+      String title,
+      bool value,
+      Function(bool) onChanged,
+      ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: GoogleFonts.pressStart2p(
-            textStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
+        Expanded(
+          child: Text(
+            title,
+            style: GoogleFonts.pressStart2p(
+              textStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+              ),
             ),
           ),
         ),
         Switch(
           value: value,
-          activeColor: Color(0xFF7CFC00),
-          inactiveThumbColor: Color(0xFFB0BEC5),
-          inactiveTrackColor: Color(0xFF1C1C1C),
-          onChanged: (newValue) async {
-            if (_soundEffectsEnabled) {
-              final effectPlayer = AudioPlayer(); // AudioPlayer local para efectos
-              await effectPlayer.play(AssetSource('audio/toggle.mp3'), volume: 0.8); // Sin bucle
-            }
-            onChanged(newValue);
-          },
+          activeColor: const Color(0xFF7CFC00),
+          inactiveThumbColor: const Color(0xFFB0BEC5),
+          inactiveTrackColor: const Color(0xFF1C1C1C),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVolumeSlider(
+      BuildContext context,
+      WidgetRef ref,
+      double value,
+      ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Volumen: ${(value * 100).toInt()}%',
+          style: GoogleFonts.pressStart2p(
+            textStyle: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: const Color(0xFF7CFC00),
+            inactiveTrackColor: const Color(0xFFB0BEC5),
+            thumbColor: const Color(0xFF7CFC00),
+            overlayColor: const Color(0xFF7CFC00).withOpacity(0.3),
+            trackHeight: 4,
+          ),
+          child: Slider(
+            value: value,
+            min: 0.0,
+            max: 1.0,
+            divisions: 10,
+            onChanged: (newValue) async {
+              await ref.read(settingsControllerProvider.notifier).setVolume(newValue);
+            },
+          ),
         ),
       ],
     );

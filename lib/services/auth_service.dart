@@ -74,6 +74,8 @@ class AuthService {
     required String password,
   }) async {
     try {
+      print('🔐 Iniciando sesión con email: $email');
+
       final UserCredential credential = await _firebaseService.auth.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -83,13 +85,34 @@ class AuthService {
         throw Exception('Error al iniciar sesión');
       }
 
-      // Actualizar último login
-      await _databaseService.updateLastLogin(credential.user!.uid);
+      print('✅ Usuario autenticado en Firebase Auth: ${credential.user!.uid}');
 
-      // Obtener datos del usuario desde Firestore
-      final userModel = await _databaseService.getUser(credential.user!.uid);
+      // Intentar obtener datos del usuario desde Firestore
+      UserModel? userModel = await _databaseService.getUser(credential.user!.uid);
 
-      print('✅ Sesión iniciada: ${userModel?.email}');
+      // Si no existe el documento, crearlo
+      if (userModel == null) {
+        print('⚠️ Usuario no existe en Firestore, creando documento...');
+
+        userModel = UserModel(
+          id: credential.user!.uid,
+          email: email,
+          displayName: credential.user!.displayName ?? email.split('@')[0],
+          photoUrl: credential.user!.photoURL,
+          createdAt: DateTime.now(),
+          lastLogin: DateTime.now(),
+        );
+
+        await _databaseService.createUser(userModel);
+        print('✅ Documento de usuario creado en Firestore');
+      } else {
+        // Si existe, actualizar último login
+        print('✅ Usuario encontrado en Firestore, actualizando último login');
+        userModel = userModel.copyWith(lastLogin: DateTime.now());
+        await _databaseService.updateUser(userModel);
+      }
+
+      print('✅ Login completado exitosamente');
       return userModel;
     } catch (e) {
       print('❌ Error al iniciar sesión: $e');

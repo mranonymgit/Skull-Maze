@@ -30,11 +30,14 @@ final databaseServiceProvider = Provider<DatabaseService>((ref) {
 final audioServiceProvider = Provider<AudioService>((ref) {
   final audioService = AudioService();
 
-  // Inicializar audio service
-  audioService.initialize();
-
-  // Reproducir música de fondo al iniciar
-  audioService.playBackgroundMusic();
+  // Inicializar audio service de forma segura
+  audioService.initialize().then((_) {
+    // NO reproducir música automáticamente
+    // El usuario debe interactuar primero (hacer clic en login)
+    print('✅ Audio Service listo (música en espera de interacción del usuario)');
+  }).catchError((e) {
+    print('⚠️ No se pudo inicializar audio service: $e');
+  });
 
   // Limpiar al destruir
   ref.onDispose(() {
@@ -45,23 +48,9 @@ final audioServiceProvider = Provider<AudioService>((ref) {
 });
 
 // ==================== CONTROLLERS ====================
-
-/// Provider del controlador de autenticación
-/// Ya está definido en auth_controller.dart como authControllerProvider
-
-/// Provider del controlador del juego
-/// Ya está definido en game_controller.dart como gameControllerProvider
-
-/// Provider del controlador de ranking
-/// Ya está definido en ranking_controller.dart como rankingControllerProvider
-
-/// Provider del controlador de configuraciones
-/// Ya está definido en settings_controller.dart como settingsControllerProvider
+// Los providers de controllers ya están definidos en sus respectivos archivos
 
 // ==================== PROVIDERS DE ESTADO ====================
-
-/// Provider del usuario actual (conveniente)
-/// Ya está definido en auth_controller.dart como currentUserProvider
 
 /// Provider que verifica si el usuario está autenticado
 final isAuthenticatedProvider = Provider<bool>((ref) {

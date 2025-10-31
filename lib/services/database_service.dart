@@ -20,10 +20,11 @@ class DatabaseService {
   /// Crea un nuevo usuario en Firestore
   Future<void> createUser(UserModel user) async {
     try {
+      print('📝 Creando usuario en Firestore: ${user.id}');
       await _firebaseService.getUserDocument(user.id).set(user.toMap());
       print('✅ Usuario creado en Firestore: ${user.id}');
     } catch (e) {
-      print('❌ Error al crear usuario: $e');
+      print('❌ Error al crear usuario en Firestore: $e');
       throw _firebaseService.handleFirebaseError(e);
     }
   }
@@ -31,14 +32,16 @@ class DatabaseService {
   /// Obtiene los datos de un usuario
   Future<UserModel?> getUser(String userId) async {
     try {
+      print('🔍 Obteniendo usuario de Firestore: $userId');
       final doc = await _firebaseService.getUserDocument(userId).get();
       if (!doc.exists) {
-        print('⚠️ Usuario no encontrado: $userId');
+        print('⚠️ Usuario no encontrado en Firestore: $userId');
         return null;
       }
+      print('✅ Usuario obtenido de Firestore: $userId');
       return UserModel.fromMap(doc.data() as Map<String, dynamic>, userId);
     } catch (e) {
-      print('❌ Error al obtener usuario: $e');
+      print('❌ Error al obtener usuario de Firestore: $e');
       throw _firebaseService.handleFirebaseError(e);
     }
   }
@@ -46,7 +49,11 @@ class DatabaseService {
   /// Actualiza los datos de un usuario
   Future<void> updateUser(UserModel user) async {
     try {
-      await _firebaseService.getUserDocument(user.id).update(user.toMap());
+      print('📝 Actualizando usuario en Firestore: ${user.id}');
+      await _firebaseService.getUserDocument(user.id).set(
+        user.toMap(),
+        SetOptions(merge: true), // ⭐ Usar merge
+      );
       print('✅ Usuario actualizado: ${user.id}');
     } catch (e) {
       print('❌ Error al actualizar usuario: $e');
@@ -57,13 +64,14 @@ class DatabaseService {
   /// Actualiza el último login del usuario
   Future<void> updateLastLogin(String userId) async {
     try {
-      await _firebaseService.getUserDocument(userId).update({
+      print('📝 Actualizando último login para: $userId');
+      await _firebaseService.getUserDocument(userId).set({
         'lastLogin': DateTime.now().toIso8601String(),
-      });
+      }, SetOptions(merge: true)); // ⭐ Usar merge en lugar de update
       print('✅ Último login actualizado: $userId');
     } catch (e) {
       print('❌ Error al actualizar último login: $e');
-      throw _firebaseService.handleFirebaseError(e);
+      // No lanzar error, solo log
     }
   }
 

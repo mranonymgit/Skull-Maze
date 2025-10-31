@@ -11,23 +11,43 @@ class AudioService {
   // Reproductores de audio
   AudioPlayer? _backgroundMusicPlayer;
   AudioPlayer? _levelMusicPlayer;
-  final Map<String, AudioPlayer> _effectPlayers = {};
 
   // Estado del audio
   bool _isMusicEnabled = true;
   bool _areSoundEffectsEnabled = true;
   double _volumeLevel = 0.5;
 
+  // Estado de reproducción
+  bool _isBackgroundMusicPlaying = false;
+  bool _isLevelMusicPlaying = false;
+  bool _wasPlayingBeforePause = false;
+
   // Getters
   bool get isMusicEnabled => _isMusicEnabled;
   bool get areSoundEffectsEnabled => _areSoundEffectsEnabled;
   double get volumeLevel => _volumeLevel;
+  bool get isBackgroundMusicPlaying => _isBackgroundMusicPlaying;
+  bool get isLevelMusicPlaying => _isLevelMusicPlaying;
 
   /// Inicializa el servicio de audio
   Future<void> initialize() async {
-    _backgroundMusicPlayer = AudioPlayer();
-    _levelMusicPlayer = AudioPlayer();
-    print('✅ Audio Service inicializado');
+    try {
+      _backgroundMusicPlayer = AudioPlayer();
+      _levelMusicPlayer = AudioPlayer();
+
+      // Configurar listeners para saber cuándo termina una canción
+      _backgroundMusicPlayer?.onPlayerStateChanged.listen((state) {
+        _isBackgroundMusicPlaying = state == PlayerState.playing;
+      });
+
+      _levelMusicPlayer?.onPlayerStateChanged.listen((state) {
+        _isLevelMusicPlaying = state == PlayerState.playing;
+      });
+
+      print('✅ Audio Service inicializado');
+    } catch (e) {
+      print('⚠️ Error al inicializar Audio Service: $e');
+    }
   }
 
   // ==================== MÚSICA DE FONDO ====================
@@ -35,7 +55,16 @@ class AudioService {
   /// Reproduce la música de ambiente (menú principal)
   Future<void> playBackgroundMusic() async {
     try {
-      if (!_isMusicEnabled) return;
+      if (!_isMusicEnabled) {
+        print('⚠️ Música deshabilitada');
+        return;
+      }
+
+      // Si ya está reproduciendo, no hacer nada
+      if (_isBackgroundMusicPlaying) {
+        print('ℹ️ Música de fondo ya está reproduciendo');
+        return;
+      }
 
       await _backgroundMusicPlayer?.stop();
       await _backgroundMusicPlayer?.setReleaseMode(ReleaseMode.loop);
@@ -43,6 +72,7 @@ class AudioService {
         AssetSource('audio/ambient.mp3'),
         volume: _volumeLevel,
       );
+      _isBackgroundMusicPlaying = true;
       print('🎵 Música de fondo reproduciendo');
     } catch (e) {
       print('❌ Error al reproducir música de fondo: $e');
@@ -52,8 +82,11 @@ class AudioService {
   /// Pausa la música de fondo
   Future<void> pauseBackgroundMusic() async {
     try {
-      await _backgroundMusicPlayer?.pause();
-      print('⏸️ Música de fondo pausada');
+      if (_isBackgroundMusicPlaying) {
+        await _backgroundMusicPlayer?.pause();
+        _isBackgroundMusicPlaying = false;
+        print('⏸️ Música de fondo pausada');
+      }
     } catch (e) {
       print('❌ Error al pausar música de fondo: $e');
     }
@@ -63,8 +96,12 @@ class AudioService {
   Future<void> resumeBackgroundMusic() async {
     try {
       if (!_isMusicEnabled) return;
-      await _backgroundMusicPlayer?.resume();
-      print('▶️ Música de fondo reanudada');
+
+      if (!_isBackgroundMusicPlaying) {
+        await _backgroundMusicPlayer?.resume();
+        _isBackgroundMusicPlaying = true;
+        print('▶️ Música de fondo reanudada');
+      }
     } catch (e) {
       print('❌ Error al reanudar música de fondo: $e');
     }
@@ -74,6 +111,7 @@ class AudioService {
   Future<void> stopBackgroundMusic() async {
     try {
       await _backgroundMusicPlayer?.stop();
+      _isBackgroundMusicPlaying = false;
       print('⏹️ Música de fondo detenida');
     } catch (e) {
       print('❌ Error al detener música de fondo: $e');
@@ -97,6 +135,7 @@ class AudioService {
         AssetSource('audio/level.mp3'),
         volume: _volumeLevel,
       );
+      _isLevelMusicPlaying = true;
       print('🎵 Música de nivel reproduciendo');
     } catch (e) {
       print('❌ Error al reproducir música de nivel: $e');
@@ -106,8 +145,11 @@ class AudioService {
   /// Pausa la música del nivel
   Future<void> pauseLevelMusic() async {
     try {
-      await _levelMusicPlayer?.pause();
-      print('⏸️ Música de nivel pausada');
+      if (_isLevelMusicPlaying) {
+        await _levelMusicPlayer?.pause();
+        _isLevelMusicPlaying = false;
+        print('⏸️ Música de nivel pausada');
+      }
     } catch (e) {
       print('❌ Error al pausar música de nivel: $e');
     }
@@ -117,8 +159,12 @@ class AudioService {
   Future<void> resumeLevelMusic() async {
     try {
       if (!_isMusicEnabled) return;
-      await _levelMusicPlayer?.resume();
-      print('▶️ Música de nivel reanudada');
+
+      if (!_isLevelMusicPlaying) {
+        await _levelMusicPlayer?.resume();
+        _isLevelMusicPlaying = true;
+        print('▶️ Música de nivel reanudada');
+      }
     } catch (e) {
       print('❌ Error al reanudar música de nivel: $e');
     }
@@ -128,8 +174,11 @@ class AudioService {
   Future<void> stopLevelMusic() async {
     try {
       await _levelMusicPlayer?.stop();
-      await resumeBackgroundMusic();
-      print('⏹️ Música de nivel detenida');
+      _isLevelMusicPlaying = false;
+
+      // Reanudar música de fondo
+      await playBackgroundMusic();
+      print('⏹️ Música de nivel detenida, música de fondo reanudada');
     } catch (e) {
       print('❌ Error al detener música de nivel: $e');
     }
@@ -137,15 +186,16 @@ class AudioService {
 
   // ==================== EFECTOS DE SONIDO ====================
 
-  /// Reproduce un efecto de sonido
+  /// Reproduce un efecto de sonido (NO PAUSA LA MÚSICA)
   Future<void> playSoundEffect(SoundEffect effect) async {
     try {
       if (!_areSoundEffectsEnabled) return;
 
+      // Crear un nuevo AudioPlayer para cada efecto (se reproduce independientemente)
       final effectPlayer = AudioPlayer();
       await effectPlayer.play(
         AssetSource(effect.path),
-        volume: _volumeLevel * 0.8, // Efectos un poco más bajos que la música
+        volume: _volumeLevel * 0.8,
       );
 
       // Limpiar el reproductor después de terminar
@@ -153,9 +203,9 @@ class AudioService {
         effectPlayer.dispose();
       });
 
-      print('🔊 Efecto reproducido: ${effect.name}');
+      // NO hacer print para efectos (demasiado verbose)
     } catch (e) {
-      print('❌ Error al reproducir efecto: $e');
+      // Silenciar errores de efectos para no saturar logs
     }
   }
 
@@ -201,8 +251,15 @@ class AudioService {
     _isMusicEnabled = enabled;
 
     if (enabled) {
-      await resumeBackgroundMusic();
+      // Reanudar la música que estaba sonando
+      if (_isLevelMusicPlaying || _wasPlayingBeforePause) {
+        await resumeLevelMusic();
+      } else {
+        await resumeBackgroundMusic();
+      }
     } else {
+      // Guardar estado antes de pausar
+      _wasPlayingBeforePause = _isBackgroundMusicPlaying || _isLevelMusicPlaying;
       await pauseBackgroundMusic();
       await pauseLevelMusic();
     }
@@ -244,6 +301,33 @@ class AudioService {
     print('✅ Configuraciones de audio aplicadas');
   }
 
+  // ==================== CICLO DE VIDA ====================
+
+  /// Llamar cuando la app pasa a background
+  Future<void> onAppPaused() async {
+    print('📱 App pausada - pausando música');
+    _wasPlayingBeforePause = _isBackgroundMusicPlaying || _isLevelMusicPlaying;
+
+    await pauseBackgroundMusic();
+    await pauseLevelMusic();
+  }
+
+  /// Llamar cuando la app vuelve a foreground
+  Future<void> onAppResumed() async {
+    print('📱 App reanudada - reanudando música');
+
+    if (!_isMusicEnabled) return;
+
+    if (_wasPlayingBeforePause) {
+      if (_isLevelMusicPlaying) {
+        await resumeLevelMusic();
+      } else {
+        await resumeBackgroundMusic();
+      }
+      _wasPlayingBeforePause = false;
+    }
+  }
+
   // ==================== LIMPIEZA ====================
 
   /// Libera todos los recursos de audio
@@ -254,12 +338,6 @@ class AudioService {
 
       await _levelMusicPlayer?.stop();
       await _levelMusicPlayer?.dispose();
-
-      for (var player in _effectPlayers.values) {
-        await player.stop();
-        await player.dispose();
-      }
-      _effectPlayers.clear();
 
       print('✅ Audio Service cerrado');
     } catch (e) {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'config/firebase_options.dart';
 
 // Screens
 import 'screens/login_screen.dart';
@@ -14,14 +14,19 @@ import 'screens/game_screen.dart';
 
 // Providers
 import 'providers/app_providers.dart';
+import 'services/audio_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializar Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('✅ Firebase inicializado correctamente');
+  } catch (e) {
+    print('❌ Error al inicializar Firebase: $e');
+  }
 
   runApp(
     ProviderScope(
@@ -30,13 +35,61 @@ void main() async {
   );
 }
 
-class MyApp extends ConsumerWidget {
-  MyApp({super.key});
+class MyApp extends ConsumerStatefulWidget {
+  const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Inicializar servicios
-    ref.watch(audioServiceProvider);
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
+
+  @override
+  void initState() {
+    super.initState();
+    // Observar cambios en el ciclo de vida de la app
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    final audioService = ref.read(audioServiceProvider);
+
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      // App en background o inactiva
+        audioService.onAppPaused();
+        break;
+      case AppLifecycleState.resumed:
+      // App en foreground
+        audioService.onAppResumed();
+        break;
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+      // App cerrada
+        audioService.onAppPaused();
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Inicializar audio service de forma segura
+    try {
+      ref.read(audioServiceProvider);
+      print('✅ Audio Service inicializado');
+    } catch (e) {
+      print('⚠️ Error al inicializar Audio Service: $e');
+    }
 
     final router = GoRouter(
       initialLocation: '/login',
@@ -44,17 +97,15 @@ class MyApp extends ConsumerWidget {
         final isAuthenticated = ref.read(isAuthenticatedProvider);
         final isLoggingIn = state.matchedLocation == '/login';
 
-        // Si no está autenticado y no está en login, redirigir a login
         if (!isAuthenticated && !isLoggingIn) {
           return '/login';
         }
 
-        // Si está autenticado y está en login, redirigir a niveles
         if (isAuthenticated && isLoggingIn) {
           return '/levels';
         }
 
-        return null; // No redirigir
+        return null;
       },
       routes: [
         GoRoute(
