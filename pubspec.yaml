@@ -80,7 +80,6 @@ flutter:
     - assets/images/goal.png
   ##################### AUDIO #####################################
     - assets/audio/enemy_sound.wav # Para música y efectos (ej. bgm.mp3, win.wav).
-    - assets/audio/level_bgm.mp3
     - assets/audio/win.mp3
     - assets/audio/menu.mp3
     - assets/audio/lost.mp3
