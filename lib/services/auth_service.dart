@@ -34,6 +34,8 @@ class AuthService {
     String? displayName,
   }) async {
     try {
+      print('📝 Registrando nuevo usuario: $email');
+
       // Crear usuario en Firebase Auth
       final UserCredential credential = await _firebaseService.auth.createUserWithEmailAndPassword(
         email: email,
@@ -44,8 +46,10 @@ class AuthService {
         throw Exception('Error al crear usuario');
       }
 
+      print('✅ Usuario creado en Firebase Auth: ${credential.user!.uid}');
+
       // Actualizar el displayName si se proporcionó
-      if (displayName != null) {
+      if (displayName != null && displayName.isNotEmpty) {
         await credential.user!.updateDisplayName(displayName);
       }
 
@@ -60,7 +64,7 @@ class AuthService {
 
       await _databaseService.createUser(userModel);
 
-      print('✅ Usuario registrado: ${userModel.email}');
+      print('✅ Usuario registrado exitosamente: ${userModel.email}');
       return userModel;
     } catch (e) {
       print('❌ Error al registrar: $e');

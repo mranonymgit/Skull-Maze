@@ -102,7 +102,7 @@
       }
     }
 
-    /// Inicia sesión con Google
+    /// Inicia sesión con Google (compatible con web)
     Future<void> signInWithGoogle() async {
       try {
         state = AuthState.loading();
@@ -120,9 +120,11 @@
           );
 
           await _audioService.playSelectSound();
+          print('✅ Login con Google exitoso');
         } else {
           // Usuario canceló el login
           state = AuthState.initial();
+          print('⚠️ Login con Google cancelado por el usuario');
         }
       } catch (e) {
         state = AuthState.error(e.toString());

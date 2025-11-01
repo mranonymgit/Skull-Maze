@@ -11,6 +11,8 @@ import 'screens/character_customization.dart';
 import 'screens/rankings.dart';
 import 'screens/settings.dart';
 import 'screens/game_screen.dart';
+import 'screens/forgot_password_screen.dart';
+import 'screens/register_screen.dart';
 
 // Providers
 import 'providers/app_providers.dart';
@@ -96,12 +98,14 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       redirect: (context, state) {
         final isAuthenticated = ref.read(isAuthenticatedProvider);
         final isLoggingIn = state.matchedLocation == '/login';
+        final isRegistering = state.matchedLocation == '/register';
+        final isForgotPassword = state.matchedLocation == '/forgot-password';
 
-        if (!isAuthenticated && !isLoggingIn) {
+        if (!isAuthenticated && !isLoggingIn && !isRegistering && !isForgotPassword) {
           return '/login';
         }
 
-        if (isAuthenticated && isLoggingIn) {
+        if (isAuthenticated && (isLoggingIn || isRegistering)) {
           return '/levels';
         }
 
@@ -111,6 +115,14 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         GoRoute(
           path: '/login',
           builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/register', // ⭐ NUEVA RUTA
+          builder: (context, state) => const RegisterScreen(),
+        ),
+        GoRoute(
+          path: '/forgot-password', // ⭐ NUEVA RUTA
+          builder: (context, state) => const ForgotPasswordScreen(),
         ),
         GoRoute(
           path: '/levels',
