@@ -117,12 +117,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
           builder: (context, state) => const LoginScreen(),
         ),
         GoRoute(
-          path: '/register', // ⭐ NUEVA RUTA
-          builder: (context, state) => const RegisterScreen(),
+          path: '/forgot-password',
+          builder: (context, state) => const ForgotPasswordScreen(),
         ),
         GoRoute(
-          path: '/forgot-password', // ⭐ NUEVA RUTA
-          builder: (context, state) => const ForgotPasswordScreen(),
+          path: '/register',
+          builder: (context, state) => const RegisterScreen(),
         ),
         GoRoute(
           path: '/levels',
@@ -138,7 +138,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         ),
         GoRoute(
           path: '/settings',
-          builder: (context, state) => const Settings(),
+          builder: (context, state) => const SettingsScreen(),
         ),
         GoRoute(
           path: '/game/:level',

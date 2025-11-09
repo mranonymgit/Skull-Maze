@@ -1027,7 +1027,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         divisions: 10,
                         label: '${(settings.volumeLevel * 100).round()}%',
                         onChanged: (value) async {
-                          await ref.read(settingsControllerProvider.notifier).setVolume(value);
+                          ref.read(settingsControllerProvider.notifier).setVolume(value);
                           setDialogState(() {});
                         },
                         activeColor: const Color(0xFF7CFC00),
@@ -1048,7 +1048,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     Switch(
                       value: settings.vibrationEnabled,
                       onChanged: (value) async {
-                        await ref.read(settingsControllerProvider.notifier).toggleVibration(value);
+                        ref.read(settingsControllerProvider.notifier).toggleVibration(value);
                         setDialogState(() {});
                         if (value) {
                           HapticFeedback.mediumImpact();
@@ -1073,7 +1073,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       Switch(
                         value: settings.gyroscopeEnabled,
                         onChanged: (value) async {
-                          await ref.read(settingsControllerProvider.notifier).toggleGyroscope(value);
+                          ref.read(settingsControllerProvider.notifier).toggleGyroscope(value);
                           game.toggleGyroscope(value);
                           setDialogState(() {});
                           if (value) {

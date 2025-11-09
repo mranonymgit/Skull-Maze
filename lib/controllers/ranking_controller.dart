@@ -3,6 +3,7 @@ import '../models/score_model.dart';
 import '../services/database_service.dart';
 import '../services/audio_service.dart';
 
+
 /// Controller del Ranking
 /// Maneja la obtención y visualización del ranking global
 class RankingController extends StateNotifier<RankingState> {
