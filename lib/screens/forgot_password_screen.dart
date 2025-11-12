@@ -1,126 +1,69 @@
+// lib/screens/forgot_password_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/audio_service.dart';
 import '../providers/app_providers.dart';
-import 'dart:convert';
-import 'dart:math';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-
-
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
-
-  @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  @override ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
-  final _codeController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  bool _codeSent = false;
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _codeController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _sendCode() async {
+  Future<void> _sendResetLink() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    final audioService = ref.read(audioServiceProvider);
-    await audioService.playClickSound();
-
-    final code = (100000 + Random().nextInt(900000)).toString(); // Genera código 6 dígitos
+    await ref.read(audioServiceProvider).playClickSound();
 
     try {
-      final response = await http.post(
-        Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'service_id': 'service_qogjp9f',
-          'template_id': 'template_fyi75lw',
-          'user_id': 'r1C5ReyW8-d5TEcEC',
-          'template_params': {
-            'email': _emailController.text,
-            'code': code,
-            // Puedes agregar más parámetros si tu plantilla lo requiere
-          }
-        }),
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: _emailController.text.trim(),
       );
 
-      if (response.statusCode == 200) {
-        setState(() => _codeSent = true);
-        // Aquí guarda el código temporalmente si lo necesitas (SharedPreferences, Firestore)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Código enviado a ${_emailController.text}'),
+            content: Text('Enlace enviado a ${_emailController.text.trim()}'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
           ),
         );
-      } else {
-        throw Exception('No se pudo enviar el correo');
+
+        // Regresa al login automáticamente después de 3 segundos
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) context.go('/login');
+        });
       }
+    } on FirebaseAuthException catch (e) {
+      String mensaje = 'Error desconocido';
+      if (e.code == 'user-not-found') mensaje = 'No existe cuenta con ese correo';
+      if (e.code == 'invalid-email') mensaje = 'Correo inválido';
+      if (e.code == 'too-many-requests') mensaje = 'Demasiados intentos. Espera un rato';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensaje), backgroundColor: Colors.red),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Error de conexión'), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _verifyCode() async {
-    if (_codeController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa el código'), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedCode = prefs.getString('recovery_code');
-      final savedEmail = prefs.getString('recovery_email');
-      final savedTime = prefs.getInt('recovery_time') ?? 0;
-      final email = _emailController.text.trim();
-
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final isExpired = now - savedTime > 10 * 60 * 1000; // 10 minutos
-
-      if (email == savedEmail &&
-          _codeController.text == savedCode &&
-          !isExpired) {
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Código verificado!'), backgroundColor: Colors.green),
-        );
-        context.go('/reset-password'); // Aquí irás a cambiar contraseña
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isExpired ? 'Código expirado' : 'Código inválido'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
   }
 
   @override
@@ -146,46 +89,65 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 50),
 
                     // Logo
                     CircleAvatar(
-                      radius: 70,
+                      radius: 80,
                       backgroundColor: Colors.transparent,
                       child: Image.asset('assets/images/skull_logo.png'),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 30),
 
+                    // Título
                     Text(
                       'Recuperar contraseña',
                       style: GoogleFonts.pressStart2p(
                         color: const Color(0xFF7CFC00),
-                        fontSize: 20,
-                        shadows: [Shadow(color: Colors.black.withOpacity(0.5), blurRadius: 10)],
+                        fontSize: 22,
+                        shadows: [Shadow(color: Colors.black54, blurRadius: 10)],
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 15),
 
-                    // Email
-                    _buildTextField(
-                      controller: _emailController,
-                      label: 'Correo electrónico',
-                      icon: Icons.email,
-                      enabled: !_codeSent,
-                      validator: (v) => v?.contains('@') == true ? null : 'Correo inválido',
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Código
-                    if (_codeSent) ...[
-                      _buildTextField(
-                        controller: _codeController,
-                        label: 'Código de 6 dígitos',
-                        icon: Icons.lock_outline,
-                        keyboardType: TextInputType.number,
+                    // Subtítulo
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        'Te enviaremos un enlace seguro para cambiar tu contraseña',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.openSans(color: Colors.grey[400], fontSize: 16),
                       ),
-                      const SizedBox(height: 30),
-                    ],
+                    ),
+                    const SizedBox(height: 60),
+
+                    // Campo email
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFF007F)),
+                        boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: const Offset(0, 5))],
+                      ),
+                      child: TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.email, color: Color(0xFF00FFFF)),
+                          labelText: 'Correo electrónico',
+                          labelStyle: GoogleFonts.openSans(color: Colors.grey[400]),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.all(20),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return 'Ingresa tu correo';
+                          if (!value.contains('@')) return 'Correo inválido';
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 50),
 
                     // Botón
                     _isLoading
@@ -193,25 +155,25 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         : SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _codeSent ? _verifyCode : _sendCode,
+                        onPressed: _sendResetLink,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFFE87C),
                           foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                             side: const BorderSide(color: Color(0xFFFF007F), width: 2),
                           ),
-                          elevation: 8,
+                          elevation: 12,
                         ),
                         child: Text(
-                          _codeSent ? 'Verificar código' : 'Obtener código',
-                          style: GoogleFonts.pressStart2p(fontSize: 14),
+                          'Enviar enlace',
+                          style: GoogleFonts.pressStart2p(fontSize: 16),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 40),
 
                     // Volver
                     TextButton(
@@ -220,8 +182,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         context.go('/login');
                       },
                       child: Text(
-                        '← Volver al login',
-                        style: GoogleFonts.openSans(color: const Color(0xFF00FFFF)),
+                        'Volver al login',
+                        style: GoogleFonts.openSans(color: const Color(0xFF00FFFF), fontSize: 16),
                       ),
                     ),
                   ],
@@ -230,37 +192,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool enabled = true,
-    TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black26,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: enabled ? const Color(0xFFFF007F) : Colors.grey),
-      ),
-      child: TextFormField(
-        controller: controller,
-        enabled: enabled,
-        keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          prefixIcon: Icon(icon, color: const Color(0xFF00FFFF)),
-          labelText: label,
-          labelStyle: GoogleFonts.openSans(color: Colors.grey[400]),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        ),
-        validator: validator,
       ),
     );
   }

@@ -396,7 +396,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 _buildAnimatedToggle(
                                   context,
                                   ref,
-                                  'Controles por giroscopio',
+                                  'Controles por acelerómetro',
                                   Icons.screen_rotation,
                                   settingsState.gyroscopeEnabled,
                                       () async {

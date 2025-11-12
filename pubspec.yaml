@@ -80,6 +80,12 @@ flutter:
     - assets/images/skull_logo.png
     - assets/images/skull_player.png
     - assets/images/goal.png
+    - assets/images/Catty.png
+    - assets/images/Doggy.png
+    - assets/images/Robo.png
+    - assets/images/Setty.png
+    - assets/images/Snoopy.png
+    - assets/images/Special Halloween.png
   ##################### AUDIO #####################################
     - assets/audio/enemy_sound.wav # Para música y efectos (ej. bgm.mp3, win.wav).
     - assets/audio/win.mp3
@@ -95,10 +101,6 @@ flutter:
     - assets/audio/b_menu.mp3
     - assets/audio/level.mp3
     - assets/audio/click.mp3
-  ###################### TILES ####################################
-    - assets/tiles/maze_tileset.json
-    - assets/tiles/maze_map.json
-    - assets/tiles/maz_tiles.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
