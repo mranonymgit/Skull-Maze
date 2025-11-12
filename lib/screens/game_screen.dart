@@ -7,17 +7,11 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
-import 'package:sensors_plus/sensors_plus.dart';
-import 'dart:async' as async;
 import '../providers/app_providers.dart';
 import '../controllers/game_controller.dart';
 import '../controllers/settings_controller.dart';
 
 // IMPORTACION DE TODAS LAS CLASES
-import 'package:skull_maze/class/wall.dart';
-import 'package:skull_maze/class/NeonWall.dart';
-import 'package:skull_maze/class/goal.dart';
-import 'package:skull_maze/class/player.dart';
 import 'package:skull_maze/class/directional_buttons.dart';
 import 'package:skull_maze/class/main_game.dart';
 
