@@ -154,7 +154,6 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
   void _showPauseMenu() {
     final audioService = ref.read(audioServiceProvider);
-    final settings = ref.read(settingsControllerProvider);
 
     audioService.playClickSound();
     audioService.pauseLevelMusic();
@@ -163,142 +162,200 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1C1C1C),
-          title: Text(
-            'Pausa',
-            style: GoogleFonts.pressStart2p(color: const Color(0xFF7CFC00)),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton(
-                  onPressed: () async {
-                    await audioService.playClickSound();
-                    game.isPaused = false;
-                    await audioService.resumeLevelMusic();
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    'Reanudar',
-                    style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5)),
-                  ),
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1C),
+        title: Text(
+          'Pausa',
+          style: GoogleFonts.pressStart2p(color: const Color(0xFF7CFC00)),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Reanudar
+              TextButton(
+                onPressed: () async {
+                  await audioService.playClickSound();
+                  game.isPaused = false;
+                  await audioService.resumeLevelMusic();
+                  if (context.mounted) Navigator.pop(context);
+                },
+                child: Text(
+                  'Reanudar',
+                  style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5)),
                 ),
-                const SizedBox(height: 10),
+              ),
+              const SizedBox(height: 16),
 
-                // Control de volumen
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Volumen: ',
-                      style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5)),
-                    ),
-                    Expanded(
-                      child: Slider(
-                        value: settings.volumeLevel,
+              // ===== VOLUMEN (EXACTO AL QUE QUERÍAS) =====
+              Consumer(
+                builder: (context, ref, child) {
+                  final volume = ref.watch(settingsControllerProvider.select((s) => s.volumeLevel));
+                  final percentage = (volume * 100).toInt();
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Fila superior: icono + Volumen + porcentaje
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.volume_up, color: Color(0xFF7CFC00), size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Volumen',
+                                style: GoogleFonts.openSans(
+                                  textStyle: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '$percentage%',
+                            style: GoogleFonts.openSans(
+                              textStyle: const TextStyle(
+                                color: Color(0xFF7CFC00),
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Slider debajo
+                      Slider(
+                        value: volume,
                         min: 0.0,
                         max: 1.0,
                         divisions: 10,
-                        label: '${(settings.volumeLevel * 100).round()}%',
-                        onChanged: (value) async {
+                        label: '$percentage%',
+                        onChanged: (value) {
                           ref.read(settingsControllerProvider.notifier).setVolume(value);
-                          setDialogState(() {});
                         },
                         activeColor: const Color(0xFF7CFC00),
                         inactiveColor: const Color(0xFFB0BEC5),
+                        thumbColor: const Color(0xFF7CFC00),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                },
+              ),
 
-                // Switch de vibración
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Vibración: ',
-                      style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5)),
-                    ),
-                    Switch(
-                      value: settings.vibrationEnabled,
-                      onChanged: (value) async {
-                        ref.read(settingsControllerProvider.notifier).toggleVibration(value);
-                        setDialogState(() {});
-                        if (value) {
-                          HapticFeedback.mediumImpact();
-                        }
-                      },
-                      activeColor: const Color(0xFF7CFC00),
-                      inactiveThumbColor: const Color(0xFFB0BEC5),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 16),
 
-                // Switch de giroscopio
-                if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android ||
-                    defaultTargetPlatform == TargetPlatform.iOS))
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+              // ===== VIBRACIÓN =====
+              Consumer(
+                builder: (context, ref, child) {
+                  final enabled = ref.watch(settingsControllerProvider.select((s) => s.vibrationEnabled));
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Giroscopio: ',
-                        style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5)),
+                      Row(
+                        children: [
+                          const Icon(Icons.vibration, color: Color(0xFF7CFC00), size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Vibración',
+                            style: GoogleFonts.openSans(
+                              textStyle: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
                       ),
                       Switch(
-                        value: settings.gyroscopeEnabled,
-                        onChanged: (value) async {
-                          ref.read(settingsControllerProvider.notifier).toggleGyroscope(value);
-                          game.toggleGyroscope(value);
-                          setDialogState(() {});
-                          if (value) {
-                            HapticFeedback.mediumImpact();
-                          }
+                        value: enabled,
+                        onChanged: (value) {
+                          ref.read(settingsControllerProvider.notifier).toggleVibration(value);
+                          if (value) HapticFeedback.mediumImpact();
                         },
                         activeColor: const Color(0xFF7CFC00),
                         inactiveThumbColor: const Color(0xFFB0BEC5),
                       ),
                     ],
-                  ),
-                const SizedBox(height: 10),
+                  );
+                },
+              ),
 
-                TextButton(
-                  onPressed: () async {
-                    await audioService.playClickSound();
-                    await _stopLevelMusic(); // Detiene level music y resume background
+              const SizedBox(height: 16),
 
-                    if (mounted && context.mounted) {
-                      Navigator.pop(context);
-                      context.go('/levels');
-                    }
+              // ===== GIROSCOPIO (solo móvil) =====
+              if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS))
+                Consumer(
+                  builder: (context, ref, child) {
+                    final enabled = ref.watch(settingsControllerProvider.select((s) => s.gyroscopeEnabled));
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.screen_rotation, color: Color(0xFF7CFC00), size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Giroscopio',
+                              style: GoogleFonts.openSans(
+                                textStyle: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: enabled,
+                          onChanged: (value) {
+                            ref.read(settingsControllerProvider.notifier).toggleGyroscope(value);
+                            game.toggleGyroscope(value);
+                            if (value) HapticFeedback.mediumImpact();
+                          },
+                          activeColor: const Color(0xFF7CFC00),
+                          inactiveThumbColor: const Color(0xFFB0BEC5),
+                        ),
+                      ],
+                    );
                   },
-                  child: Text(
-                    'Salir al Menú',
-                    style: GoogleFonts.openSans(color: const Color(0xFFFF4500)),
-                  ),
                 ),
 
-                TextButton(
-                  onPressed: () async {
-                    await audioService.playClickSound();
-                    await ref.read(gameControllerProvider.notifier).restartLevel();
+              const SizedBox(height: 20),
 
-                    if (mounted && context.mounted) {
-                      Navigator.pop(context);
-                      game.isPaused = false;
-                      game.generateMaze();
-                      await audioService.resumeLevelMusic();
-                    }
-                  },
-                  child: Text(
-                    'Reiniciar Nivel',
-                    style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5)),
-                  ),
+              // Salir al Menú
+              TextButton(
+                onPressed: () async {
+                  await audioService.playClickSound();
+                  await _stopLevelMusic();
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    context.go('/levels');
+                  }
+                },
+                child: Text(
+                  'Salir al Menú',
+                  style: GoogleFonts.openSans(color: const Color(0xFFFF4500)),
                 ),
-              ],
-            ),
+              ),
+
+              // Reiniciar Nivel
+              TextButton(
+                onPressed: () async {
+                  await audioService.playClickSound();
+                  await ref.read(gameControllerProvider.notifier).restartLevel();
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    game.isPaused = false;
+                    game.generateMaze();
+                    await audioService.resumeLevelMusic();
+                  }
+                },
+                child: Text(
+                  'Reiniciar Nivel',
+                  style: GoogleFonts.openSans(color: const Color(0xFFB0BEC5)),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -396,7 +453,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       ),
                     ),
 
-                    // Indicador de giroscopio
+                    // Indicador de acelerómetro
                     if (isMobile && settings.gyroscopeEnabled)
                       Positioned(
                         bottom: controlsBottomPadding * 2,
@@ -423,7 +480,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
-                                  'Modo Giroscopio',
+                                  'Modo Acelerómetro',
                                   style: GoogleFonts.openSans(
                                     color: const Color(0xFF7CFC00),
                                     fontSize: 16,
