@@ -134,6 +134,11 @@ final isPausedProvider = Provider<bool>((ref) {
   return gameState.isPaused;
 });
 
+// Provider para obtener fácilmente la imagen del personaje seleccionado
+final selectedCharacterImageProvider = Provider<String>((ref) {
+  return ref.watch(settingsControllerProvider).selectedCharacterImage;
+});
+
 // ==================== PROVIDERS DE RANKING ====================
 
 /// Provider de las mejores puntuaciones

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/user_model.dart';
 import '../services/database_service.dart';
 import '../services/audio_service.dart';
 import 'auth_controller.dart';
+import '../screens/character_customization.dart';
 
 /// Controller de Configuraciones
 /// Maneja todas las configuraciones del usuario (audio, personalizaciones, etc.)
@@ -22,11 +22,16 @@ class SettingsController extends StateNotifier<SettingsState> {
     _loadUserSettings();
   }
 
-  /// Carga las configuraciones del usuario
   Future<void> _loadUserSettings() async {
     try {
       final user = _ref.read(currentUserProvider);
       if (user == null) return;
+
+      // Buscamos la imagen del personaje guardado
+      final selectedChar = characters.firstWhere(
+            (c) => c.id == user.selectedCharacter,
+        orElse: () => characters.first,
+      );
 
       state = SettingsState(
         musicEnabled: user.musicEnabled,
@@ -36,9 +41,10 @@ class SettingsController extends StateNotifier<SettingsState> {
         gyroscopeEnabled: user.gyroscopeEnabled,
         volumeLevel: user.volumeLevel,
         selectedCharacter: user.selectedCharacter,
+        selectedCharacterImage: selectedChar.imagePath, // CARGAMOS LA IMAGEN
       );
     } catch (e) {
-      print('❌ Error al cargar configuraciones: $e');
+      print('Error al cargar configuraciones: $e');
     }
   }
 
@@ -200,27 +206,36 @@ class SettingsController extends StateNotifier<SettingsState> {
     }
   }
 
-  /// Selecciona un personaje
-  Future<void> selectCharacter(int character) async {
+  /// Selecciona un personaje y guarda su imagen
+  Future<void> selectCharacter(int characterId) async {
     try {
       final user = _ref.read(currentUserProvider);
       if (user == null) return;
 
-      state = state.copyWith(selectedCharacter: character);
+      // Guardamos el ID
+      state = state.copyWith(selectedCharacter: characterId);
 
-      await _databaseService.updateSelectedCharacter(user.id, character);
+      // BUSCAMOS LA IMAGEN DEL PERSONAJE SELECCIONADO
+      final selectedChar = characters.firstWhere(
+            (c) => c.id == characterId,
+        orElse: () => characters.first, // por si acaso
+      );
+      state = state.copyWith(selectedCharacterImage: selectedChar.imagePath);
+
+      // Guardamos en base de datos (solo el ID, la imagen no se guarda porque es estática)
+      await _databaseService.updateSelectedCharacter(user.id, characterId);
 
       // Actualizar usuario en auth controller
-      final updatedUser = user.copyWith(selectedCharacter: character);
+      final updatedUser = user.copyWith(selectedCharacter: characterId);
       _ref.read(authControllerProvider.notifier).updateUser(updatedUser);
 
       if (state.soundEffectsEnabled) {
         await _audioService.playSelectSound();
       }
 
-      print('👤 Personaje $character seleccionado');
+      print('Personaje ${selectedChar.name} seleccionado (ID: $characterId)');
     } catch (e) {
-      print('❌ Error al seleccionar personaje: $e');
+      print('Error al seleccionar personaje: $e');
     }
   }
 
@@ -303,6 +318,7 @@ class SettingsState {
   final bool gyroscopeEnabled;
   final double volumeLevel;
   final int selectedCharacter;
+  final String selectedCharacterImage;
 
   SettingsState({
     this.musicEnabled = true,
@@ -312,6 +328,7 @@ class SettingsState {
     this.gyroscopeEnabled = false,
     this.volumeLevel = 0.5,
     this.selectedCharacter = 1,
+    this.selectedCharacterImage = 'assets/images/Snoopy.png',
   });
 
   factory SettingsState.initial() {
@@ -326,6 +343,7 @@ class SettingsState {
     bool? gyroscopeEnabled,
     double? volumeLevel,
     int? selectedCharacter,
+    String? selectedCharacterImage,
   }) {
     return SettingsState(
       musicEnabled: musicEnabled ?? this.musicEnabled,
@@ -335,6 +353,7 @@ class SettingsState {
       gyroscopeEnabled: gyroscopeEnabled ?? this.gyroscopeEnabled,
       volumeLevel: volumeLevel ?? this.volumeLevel,
       selectedCharacter: selectedCharacter ?? this.selectedCharacter,
+      selectedCharacterImage: selectedCharacterImage ?? this.selectedCharacterImage,
     );
   }
 }

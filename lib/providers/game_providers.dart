@@ -1,4 +1,4 @@
-/*import 'package:flutter/material.dart'; // Añadido para Color y Colors
+import 'package:flutter/material.dart'; // Añadido para Color y Colors
 import 'package:riverpod/riverpod.dart';
 
 final userProvider = StateNotifierProvider<UserNotifier, GameUser?>((ref) => UserNotifier());
@@ -30,4 +30,3 @@ class ConfigNotifier extends StateNotifier<Config> {
   void toggleSound() => state = Config(sound: !state.sound);
   void setPrimaryColor(Color color) => state = Config(primary: color);
 }
-*/

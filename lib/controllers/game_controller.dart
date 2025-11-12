@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_state_model.dart';
 import '../models/level_model.dart';
 import '../models/score_model.dart';
-import '../models/user_model.dart';
 import '../services/database_service.dart';
 import '../services/audio_service.dart';
 import 'auth_controller.dart';
