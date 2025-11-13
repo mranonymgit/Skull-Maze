@@ -11,7 +11,7 @@ import 'package:skull_maze/class/NeonWall.dart';
 import 'package:skull_maze/class/goal.dart';
 import 'package:skull_maze/class/player.dart';
 
-// ================= Componente principal del juego =================
+// ================= The main game component =================
 class SkullMazeGame extends FlameGame with HasCollisionDetection {
   Player? player;
   Goal? goal;
@@ -28,7 +28,7 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
   bool isPaused = false;
   bool useGyroscope = false;
 
-  // Callbacks para comunicarse con el UI
+  // Callbacks for to communicate with the UI
   Function()? onGoalReachedCallback;
 
   List<List<int>> currentMazeGrid = [];
