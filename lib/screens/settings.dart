@@ -398,9 +398,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                   ref,
                                   'Controles por acelerómetro',
                                   Icons.screen_rotation,
-                                  settingsState.gyroscopeEnabled,
+                                  settingsState.accelerometerEnabled,
                                       () async {
-                                    await ref.read(settingsControllerProvider.notifier).toggleGyroscope(!settingsState.gyroscopeEnabled);
+                                    await ref.read(settingsControllerProvider.notifier).toggleAccelerometer(!settingsState.accelerometerEnabled);
                                   },
                                 ),
                                 const SizedBox(height: 40),

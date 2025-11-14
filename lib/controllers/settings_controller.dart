@@ -38,10 +38,10 @@ class SettingsController extends StateNotifier<SettingsState> {
         soundEffectsEnabled: user.soundEnabled,
         vibrationEnabled: user.vibrationEnabled,
         notificationsEnabled: user.notificationsEnabled,
-        gyroscopeEnabled: user.gyroscopeEnabled,
+        accelerometerEnabled: user.accelerometerEnabled,  // ✅ CAMBIADO
         volumeLevel: user.volumeLevel,
         selectedCharacter: user.selectedCharacter,
-        selectedCharacterImage: selectedChar.imagePath, // CARGAMOS LA IMAGEN
+        selectedCharacterImage: selectedChar.imagePath,
       );
     } catch (e) {
       print('Error al cargar configuraciones: $e');
@@ -62,7 +62,6 @@ class SettingsController extends StateNotifier<SettingsState> {
         musicEnabled: enabled,
       );
 
-      // Actualizar usuario en auth controller
       final updatedUser = user.copyWith(musicEnabled: enabled);
       _ref.read(authControllerProvider.notifier).updateUser(updatedUser);
 
@@ -86,7 +85,6 @@ class SettingsController extends StateNotifier<SettingsState> {
         soundEnabled: enabled,
       );
 
-      // Actualizar usuario en auth controller
       final updatedUser = user.copyWith(soundEnabled: enabled);
       _ref.read(authControllerProvider.notifier).updateUser(updatedUser);
 
@@ -113,7 +111,6 @@ class SettingsController extends StateNotifier<SettingsState> {
         vibrationEnabled: enabled,
       );
 
-      // Actualizar usuario en auth controller
       final updatedUser = user.copyWith(vibrationEnabled: enabled);
       _ref.read(authControllerProvider.notifier).updateUser(updatedUser);
 
@@ -140,7 +137,6 @@ class SettingsController extends StateNotifier<SettingsState> {
         notificationsEnabled: enabled,
       );
 
-      // Actualizar usuario en auth controller
       final updatedUser = user.copyWith(notificationsEnabled: enabled);
       _ref.read(authControllerProvider.notifier).updateUser(updatedUser);
 
@@ -154,30 +150,29 @@ class SettingsController extends StateNotifier<SettingsState> {
     }
   }
 
-  /// Habilita/deshabilita el giroscopio
-  Future<void> toggleGyroscope(bool enabled) async {
+  /// Habilita/deshabilita el ACELERÓMETRO ✅
+  Future<void> toggleAccelerometer(bool enabled) async {
     try {
       final user = _ref.read(currentUserProvider);
       if (user == null) return;
 
-      state = state.copyWith(gyroscopeEnabled: enabled);
+      state = state.copyWith(accelerometerEnabled: enabled);
 
       await _databaseService.updateUserSettings(
         user.id,
-        gyroscopeEnabled: enabled,
+        accelerometerEnabled: enabled,  // ✅ CAMBIADO
       );
 
-      // Actualizar usuario en auth controller
-      final updatedUser = user.copyWith(gyroscopeEnabled: enabled);
+      final updatedUser = user.copyWith(accelerometerEnabled: enabled);
       _ref.read(authControllerProvider.notifier).updateUser(updatedUser);
 
       if (state.soundEffectsEnabled) {
         await _audioService.playToggleSound();
       }
 
-      print('📱 Giroscopio ${enabled ? 'activado' : 'desactivado'}');
+      print('📱 Acelerómetro ${enabled ? 'activado' : 'desactivado'}');  // ✅ CAMBIADO
     } catch (e) {
-      print('❌ Error al cambiar giroscopio: $e');
+      print('❌ Error al cambiar acelerómetro: $e');
     }
   }
 
@@ -196,7 +191,6 @@ class SettingsController extends StateNotifier<SettingsState> {
         volumeLevel: clampedVolume,
       );
 
-      // Actualizar usuario en auth controller
       final updatedUser = user.copyWith(volumeLevel: clampedVolume);
       _ref.read(authControllerProvider.notifier).updateUser(updatedUser);
 
@@ -212,20 +206,16 @@ class SettingsController extends StateNotifier<SettingsState> {
       final user = _ref.read(currentUserProvider);
       if (user == null) return;
 
-      // Guardamos el ID
       state = state.copyWith(selectedCharacter: characterId);
 
-      // BUSCAMOS LA IMAGEN DEL PERSONAJE SELECCIONADO
       final selectedChar = characters.firstWhere(
             (c) => c.id == characterId,
-        orElse: () => characters.first, // por si acaso
+        orElse: () => characters.first,
       );
       state = state.copyWith(selectedCharacterImage: selectedChar.imagePath);
 
-      // Guardamos en base de datos (solo el ID, la imagen no se guarda porque es estática)
       await _databaseService.updateSelectedCharacter(user.id, characterId);
 
-      // Actualizar usuario en auth controller
       final updatedUser = user.copyWith(selectedCharacter: characterId);
       _ref.read(authControllerProvider.notifier).updateUser(updatedUser);
 
@@ -251,7 +241,7 @@ class SettingsController extends StateNotifier<SettingsState> {
         soundEnabled: state.soundEffectsEnabled,
         vibrationEnabled: state.vibrationEnabled,
         notificationsEnabled: state.notificationsEnabled,
-        gyroscopeEnabled: state.gyroscopeEnabled,
+        accelerometerEnabled: state.accelerometerEnabled,  // ✅ CAMBIADO
         volumeLevel: state.volumeLevel,
       );
 
@@ -279,7 +269,7 @@ class SettingsController extends StateNotifier<SettingsState> {
         soundEnabled: true,
         vibrationEnabled: true,
         notificationsEnabled: false,
-        gyroscopeEnabled: false,
+        accelerometerEnabled: false,  // ✅ CAMBIADO
         volumeLevel: 0.5,
       );
 
@@ -289,13 +279,12 @@ class SettingsController extends StateNotifier<SettingsState> {
         volume: 0.5,
       );
 
-      // Actualizar usuario en auth controller
       final updatedUser = user.copyWith(
         musicEnabled: true,
         soundEnabled: true,
         vibrationEnabled: true,
         notificationsEnabled: false,
-        gyroscopeEnabled: false,
+        accelerometerEnabled: false,  // ✅ CAMBIADO
         volumeLevel: 0.5,
       );
       _ref.read(authControllerProvider.notifier).updateUser(updatedUser);
@@ -315,7 +304,7 @@ class SettingsState {
   final bool soundEffectsEnabled;
   final bool vibrationEnabled;
   final bool notificationsEnabled;
-  final bool gyroscopeEnabled;
+  final bool accelerometerEnabled;  // ✅ CAMBIADO
   final double volumeLevel;
   final int selectedCharacter;
   final String selectedCharacterImage;
@@ -325,7 +314,7 @@ class SettingsState {
     this.soundEffectsEnabled = true,
     this.vibrationEnabled = true,
     this.notificationsEnabled = false,
-    this.gyroscopeEnabled = false,
+    this.accelerometerEnabled = false,  // ✅ CAMBIADO
     this.volumeLevel = 0.5,
     this.selectedCharacter = 1,
     this.selectedCharacterImage = 'assets/images/Snoopy.png',
@@ -340,7 +329,7 @@ class SettingsState {
     bool? soundEffectsEnabled,
     bool? vibrationEnabled,
     bool? notificationsEnabled,
-    bool? gyroscopeEnabled,
+    bool? accelerometerEnabled,  // ✅ CAMBIADO
     double? volumeLevel,
     int? selectedCharacter,
     String? selectedCharacterImage,
@@ -350,7 +339,7 @@ class SettingsState {
       soundEffectsEnabled: soundEffectsEnabled ?? this.soundEffectsEnabled,
       vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-      gyroscopeEnabled: gyroscopeEnabled ?? this.gyroscopeEnabled,
+      accelerometerEnabled: accelerometerEnabled ?? this.accelerometerEnabled,  // ✅ CAMBIADO
       volumeLevel: volumeLevel ?? this.volumeLevel,
       selectedCharacter: selectedCharacter ?? this.selectedCharacter,
       selectedCharacterImage: selectedCharacterImage ?? this.selectedCharacterImage,

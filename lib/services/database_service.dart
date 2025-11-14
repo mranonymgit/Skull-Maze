@@ -276,7 +276,7 @@ class DatabaseService {
     bool? musicEnabled,
     bool? vibrationEnabled,
     bool? notificationsEnabled,
-    bool? gyroscopeEnabled,
+    bool? accelerometerEnabled,
     double? volumeLevel,
   }) async {
     try {
@@ -286,7 +286,7 @@ class DatabaseService {
       if (musicEnabled != null) updates['musicEnabled'] = musicEnabled;
       if (vibrationEnabled != null) updates['vibrationEnabled'] = vibrationEnabled;
       if (notificationsEnabled != null) updates['notificationsEnabled'] = notificationsEnabled;
-      if (gyroscopeEnabled != null) updates['gyroscopeEnabled'] = gyroscopeEnabled;
+      if (accelerometerEnabled != null) updates['gyroscopeEnabled'] = accelerometerEnabled;
       if (volumeLevel != null) updates['volumeLevel'] = volumeLevel;
 
       if (updates.isNotEmpty) {

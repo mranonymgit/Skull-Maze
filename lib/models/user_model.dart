@@ -24,7 +24,7 @@ class UserModel {
   final bool musicEnabled;
   final bool vibrationEnabled;
   final bool notificationsEnabled;
-  final bool gyroscopeEnabled;
+  final bool accelerometerEnabled;
   final double volumeLevel;
 
   UserModel({
@@ -45,7 +45,7 @@ class UserModel {
     this.musicEnabled = true,
     this.vibrationEnabled = true,
     this.notificationsEnabled = false,
-    this.gyroscopeEnabled = false,
+    this.accelerometerEnabled = false,
     this.volumeLevel = 0.5,
   });
 
@@ -69,7 +69,7 @@ class UserModel {
       musicEnabled: map['musicEnabled'] ?? true,
       vibrationEnabled: map['vibrationEnabled'] ?? true,
       notificationsEnabled: map['notificationsEnabled'] ?? false,
-      gyroscopeEnabled: map['gyroscopeEnabled'] ?? false,
+      accelerometerEnabled: map['gyroscopeEnabled'] ?? false,
       volumeLevel: (map['volumeLevel'] ?? 0.5).toDouble(),
     );
   }
@@ -93,7 +93,7 @@ class UserModel {
       'musicEnabled': musicEnabled,
       'vibrationEnabled': vibrationEnabled,
       'notificationsEnabled': notificationsEnabled,
-      'gyroscopeEnabled': gyroscopeEnabled,
+      'gyroscopeEnabled': accelerometerEnabled,
       'volumeLevel': volumeLevel,
     };
   }
@@ -116,7 +116,7 @@ class UserModel {
     bool? musicEnabled,
     bool? vibrationEnabled,
     bool? notificationsEnabled,
-    bool? gyroscopeEnabled,
+    bool? accelerometerEnabled,
     double? volumeLevel,
   }) {
     return UserModel(
@@ -137,7 +137,7 @@ class UserModel {
       musicEnabled: musicEnabled ?? this.musicEnabled,
       vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-      gyroscopeEnabled: gyroscopeEnabled ?? this.gyroscopeEnabled,
+      accelerometerEnabled: accelerometerEnabled ?? this.accelerometerEnabled,
       volumeLevel: volumeLevel ?? this.volumeLevel,
     );
   }

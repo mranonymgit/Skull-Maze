@@ -43,7 +43,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
       // Aplicar configuraciones del usuario al juego
       final settings = ref.read(settingsControllerProvider);
-      game.useGyroscope = settings.gyroscopeEnabled;
+      game.useAccelerometer = settings.accelerometerEnabled;
     });
   }
 
@@ -279,11 +279,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
               const SizedBox(height: 16),
 
-              // ===== GIROSCOPIO (solo móvil) =====
+              // ===== ACELERÓMETRO (solo móvil) =====
               if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS))
                 Consumer(
                   builder: (context, ref, child) {
-                    final enabled = ref.watch(settingsControllerProvider.select((s) => s.gyroscopeEnabled));
+                    final enabled = ref.watch(settingsControllerProvider.select((s) => s.accelerometerEnabled));
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -292,7 +292,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                             const Icon(Icons.screen_rotation, color: Color(0xFF7CFC00), size: 20),
                             const SizedBox(width: 8),
                             Text(
-                              'Giroscopio',
+                              'Acelerómetro',
                               style: GoogleFonts.openSans(
                                 textStyle: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
                               ),
@@ -302,8 +302,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         Switch(
                           value: enabled,
                           onChanged: (value) {
-                            ref.read(settingsControllerProvider.notifier).toggleGyroscope(value);
-                            game.toggleGyroscope(value);
+                            ref.read(settingsControllerProvider.notifier).toggleAccelerometer(value);
+                            game.toggleAccelerometer(value);
                             if (value) HapticFeedback.mediumImpact();
                           },
                           activeColor: const Color(0xFF7CFC00),
@@ -408,7 +408,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     ),
 
                     // Controles táctiles
-                    if (isMobile && !settings.gyroscopeEnabled)
+                    if (isMobile && !settings.accelerometerEnabled)
                       Positioned(
                         left: isLandscape ? controlsHorizontalPadding : null,
                         right: isLandscape ? null : controlsHorizontalPadding,
@@ -448,7 +448,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     ),
 
                     // Indicador de acelerómetro
-                    if (isMobile && settings.gyroscopeEnabled)
+                    if (isMobile && settings.accelerometerEnabled)
                       Positioned(
                         bottom: controlsBottomPadding * 2,
                         left: 0,

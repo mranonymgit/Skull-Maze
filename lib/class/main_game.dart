@@ -20,13 +20,13 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
   final List<NeonBorderWall> borderWalls = [];
   final Set<LogicalKeyboardKey> pressedKeys = {};
   Vector2 inputDirection = Vector2.zero();
-  static const double gyroSensitivity = 15.0;
-  Vector2 _gyroInput = Vector2.zero();
-  async.StreamSubscription<GyroscopeEvent>? _gyroSubscription;
+  static const double accelSensitivity = 0.9; // Ajuste para sensibilidad del acelerómetro
+  Vector2 _accelInput = Vector2.zero();
+  async.StreamSubscription<AccelerometerEvent>? _accelSubscription;
   late int effectiveGridSize;
   late double cellSize;
   bool isPaused = false;
-  bool useGyroscope = false;
+  bool useAccelerometer = false;
 
   // Callbacks for to communicate with the UI
   Function()? onGoalReachedCallback;
@@ -42,7 +42,7 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
     await super.onLoad();
     _calculateGridAndCellSize();
     _initializeGameComponents();
-    _setupGyroscope();
+    _setupAccelerometer();
     _isFirstLoad = false;
   }
 
@@ -92,29 +92,31 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
     camera.follow(player!);
   }
 
-  void _setupGyroscope() {
+  void _setupAccelerometer() {
     if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS)) {
-      _gyroSubscription = gyroscopeEvents.listen((event) {
-        if (useGyroscope && !isPaused) {
-          _gyroInput = Vector2(-event.y, event.x);
+      _accelSubscription = accelerometerEvents.listen((event) {
+        if (useAccelerometer && !isPaused) {
+          // Invertimos Y para que inclinar hacia adelante = arriba
+          // X: izquierda/derecha
+          _accelInput = Vector2(-event.x, event.y);
         } else {
-          _gyroInput = Vector2.zero();
+          _accelInput = Vector2.zero();
         }
       });
     }
   }
 
-  void toggleGyroscope(bool enabled) {
-    useGyroscope = enabled;
+  void toggleAccelerometer(bool enabled) {
+    useAccelerometer = enabled;
     if (!enabled) {
-      _gyroInput = Vector2.zero();
+      _accelInput = Vector2.zero();
     }
   }
 
   @override
   void onRemove() {
-    _gyroSubscription?.cancel();
+    _accelSubscription?.cancel();
     super.onRemove();
   }
 
@@ -322,6 +324,7 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
     if (!isPaused && player != null) {
       inputDirection = Vector2.zero();
 
+      // Controles por teclado (web y escritorio)
       if (kIsWeb || !(defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS)) {
         if (pressedKeys.contains(LogicalKeyboardKey.arrowUp) ||
@@ -342,14 +345,15 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
         }
       }
 
+      // Controles por acelerómetro (móviles)
       if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS) && useGyroscope) {
-        if (_gyroInput.length > 0.5) {
-          inputDirection = _gyroInput.normalized() * gyroSensitivity;
+          defaultTargetPlatform == TargetPlatform.iOS) && useAccelerometer) {
+        if (_accelInput.length > 0.3) { // Umbral para evitar deriva
+          inputDirection = _accelInput.normalized() * accelSensitivity;
         }
       }
 
-      if (inputDirection.length > 0) {
+      if (inputDirection.length > 1) {
         inputDirection = inputDirection.normalized();
       }
 
