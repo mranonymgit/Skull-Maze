@@ -20,6 +20,7 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
   final List<NeonBorderWall> borderWalls = [];
   final Set<LogicalKeyboardKey> pressedKeys = {};
   Vector2 inputDirection = Vector2.zero();
+  Vector2 _touchInputDirection = Vector2.zero();
   static const double accelSensitivity = 0.9; // Ajuste para sensibilidad del acelerómetro
   Vector2 _accelInput = Vector2.zero();
   async.StreamSubscription<AccelerometerEvent>? _accelSubscription;
@@ -27,6 +28,18 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
   late double cellSize;
   bool isPaused = false;
   bool useAccelerometer = false;
+
+  void setInputDirection(Vector2 direction) {
+    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS) &&
+        !useAccelerometer) {
+      inputDirection = direction;
+    }
+  }
+
+  void setTouchInput(Vector2 direction) {
+    _touchInputDirection = direction;
+  }
 
   // Callbacks for to communicate with the UI
   Function()? onGoalReachedCallback;
@@ -323,8 +336,6 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
 
     if (!isPaused && player != null) {
       inputDirection = Vector2.zero();
-
-      // Controles por teclado (web y escritorio)
       if (kIsWeb || !(defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS)) {
         if (pressedKeys.contains(LogicalKeyboardKey.arrowUp) ||
@@ -344,15 +355,14 @@ class SkullMazeGame extends FlameGame with HasCollisionDetection {
           inputDirection.x += 1;
         }
       }
-
-      // Controles por acelerómetro (móviles)
-      if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS) && useAccelerometer) {
-        if (_accelInput.length > 0.3) { // Umbral para evitar deriva
+      else {
+        if (useAccelerometer && _accelInput.length > 0.3) {
           inputDirection = _accelInput.normalized() * accelSensitivity;
         }
+        else if (!_touchInputDirection.isZero()) {
+          inputDirection = _touchInputDirection;
+        }
       }
-
       if (inputDirection.length > 1) {
         inputDirection = inputDirection.normalized();
       }

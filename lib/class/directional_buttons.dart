@@ -41,16 +41,18 @@ class _DirectionalButtonsState extends State<DirectionalButtons> {
 
     _updateTimer?.cancel();
     _updateTimer = async.Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      if (_pressedButtons.contains(direction)) {
-        _updateDirection();
+      if (!mounted || !_pressedButtons.contains(direction)) {
+        timer.cancel();
+        return;
       }
+      _updateDirection();
     });
   }
-
   void _stopContinuousUpdate(String direction) {
+    if (!mounted) return;
+
     setState(() => _pressedButtons.remove(direction));
     _updateDirection();
-
     if (_pressedButtons.isEmpty) {
       _updateTimer?.cancel();
       _updateTimer = null;

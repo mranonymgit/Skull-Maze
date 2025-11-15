@@ -408,15 +408,16 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     ),
 
                     // Controles táctiles
-                    if (isMobile && !settings.accelerometerEnabled)
+                    if (isMobile && !settings.accelerometerEnabled)  // Ya está ✅
                       Positioned(
                         left: isLandscape ? controlsHorizontalPadding : null,
                         right: isLandscape ? null : controlsHorizontalPadding,
                         bottom: controlsBottomPadding,
                         child: DirectionalButtons(
                           onDirectionChange: (Vector2 direction) {
-                            if (game.player != null && !game.isPaused) {
-                              game.inputDirection = direction;
+                            if (!game.isPaused && !kIsWeb && (defaultTargetPlatform == TargetPlatform.android
+                                || defaultTargetPlatform == TargetPlatform.iOS) && !game.useAccelerometer) {
+                              game.setTouchInput(direction);
                             }
                           },
                           isLandscape: isLandscape,
