@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "69778184117-d6j47alce329c9gnfq75rfilgpe2c4or.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.skull_maze",
+            "certificate_hash": "0e7a57be552af848530df252cacc856ca25f4598"
+          }
+        },
+        {
           "client_id": "69778184117-gguo82sde2jbnnfcndqsdavsq5pof83k.apps.googleusercontent.com",
           "client_type": 3
         }
