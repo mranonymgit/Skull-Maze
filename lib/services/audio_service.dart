@@ -244,6 +244,11 @@ class AudioService {
     await playSoundEffect(SoundEffect.defeat);
   }
 
+  /// Reproduce el sonido de éxito en sublaberinto
+  Future<void> playSuccessSound() async {
+    await playSoundEffect(SoundEffect.click); // o crea un nuevo asset: 'audio/success.mp3'
+  }
+
   // ==================== CONFIGURACIÓN ====================
 
   /// Habilita/deshabilita la música

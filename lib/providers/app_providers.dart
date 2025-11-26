@@ -103,7 +103,7 @@ final vibrationEnabledProvider = Provider<bool>((ref) {
 });
 
 /// Provider de giroscopio habilitado
-final gyroscopeEnabledProvider = Provider<bool>((ref) {
+final accelerometerEnabledProvider = Provider<bool>((ref) {
   final settings = ref.watch(settingsControllerProvider);
   return settings.accelerometerEnabled  ;
 });

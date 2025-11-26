@@ -69,7 +69,7 @@ class UserModel {
       musicEnabled: map['musicEnabled'] ?? true,
       vibrationEnabled: map['vibrationEnabled'] ?? true,
       notificationsEnabled: map['notificationsEnabled'] ?? false,
-      accelerometerEnabled: map['gyroscopeEnabled'] ?? false,
+      accelerometerEnabled: map['accelerometerEnabled'] ?? false,
       volumeLevel: (map['volumeLevel'] ?? 0.5).toDouble(),
     );
   }
@@ -93,7 +93,7 @@ class UserModel {
       'musicEnabled': musicEnabled,
       'vibrationEnabled': vibrationEnabled,
       'notificationsEnabled': notificationsEnabled,
-      'gyroscopeEnabled': accelerometerEnabled,
+      'accelerometerEnabled': accelerometerEnabled,
       'volumeLevel': volumeLevel,
     };
   }

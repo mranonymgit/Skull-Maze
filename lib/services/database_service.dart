@@ -286,7 +286,7 @@ class DatabaseService {
       if (musicEnabled != null) updates['musicEnabled'] = musicEnabled;
       if (vibrationEnabled != null) updates['vibrationEnabled'] = vibrationEnabled;
       if (notificationsEnabled != null) updates['notificationsEnabled'] = notificationsEnabled;
-      if (accelerometerEnabled != null) updates['gyroscopeEnabled'] = accelerometerEnabled;
+      if (accelerometerEnabled != null) updates['accelerometerEnabled'] = accelerometerEnabled;
       if (volumeLevel != null) updates['volumeLevel'] = volumeLevel;
 
       if (updates.isNotEmpty) {
