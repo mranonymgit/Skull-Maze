@@ -101,6 +101,7 @@ flutter:
     - assets/audio/b_menu.mp3
     - assets/audio/level.mp3
     - assets/audio/click.mp3
+    - assets/audio/succes.mp3
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
